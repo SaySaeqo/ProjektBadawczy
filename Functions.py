@@ -1,7 +1,11 @@
-
 def polynomial(x,y):
-  return 0
+  return pow(x,4)+pow(y,4)-0.62*pow(x,2)-0.62*pow(y,2)
+
+def rosenbrock(x,y):
+	return 100*pow(y-pow(x,2),2)+pow(1-x,2)
 
 def get_function(n):
-  if n==0:
-    return polynomial
+	if n==0:
+		return polynomial
+	if n==1:
+		return rosenbrock
