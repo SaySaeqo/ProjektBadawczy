@@ -3,11 +3,11 @@ Algorytm genetyczny ulepszenie
 test
 
 # Stylizacja
-Funkcje,zmienne -> snake_case__
-klasy -> camelCase__
-stale -> TAB__
+Funkcje,zmienne -> snake_case  
+klasy -> camelCase  
+stale -> TAB  
 
 # Changelog
-1. Stworzenie plików startowych...
-2. ...
+1. Stworzenie plików startowych...  
+2. ...  
 
