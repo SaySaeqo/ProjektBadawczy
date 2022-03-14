@@ -14,6 +14,7 @@ stale -> TAB
 3. Zakodowanie naiwnego algorytmu genetycznego  
 4. Zakodowanie algorytmu gradientowego  
 5. Połączenie algorytmu gradientowego z genetycznym
+    algorytm genetyczny wykorzystuje funkcje gradient(), która zwraca tablicę pochodnych
 6. Dalsza analiza i ulepszenia  
 
 # Changelog
