@@ -1,2 +1,2 @@
-def GetFunction(n):
+def get_function(n):
   pass
