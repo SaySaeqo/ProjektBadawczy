@@ -1,6 +1,13 @@
 # ProjektBadawczy
 Algorytm genetyczny ulepszenie
 test
-# Funkcje,zmienne Snake-case wszystko male i podlogi
-# klasy - camelCase 
-# stale - krzykliwy tabulator
+
+# Stylizacja
+Funkcje,zmienne -> snake_case
+klasy -> camelCase 
+stale -> TAB
+
+# Changelog
+1. Stworzenie plików startowych...
+2. ...
+
