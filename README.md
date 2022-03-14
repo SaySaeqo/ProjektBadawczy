@@ -19,4 +19,6 @@ stale -> TAB
 # Changelog
 1. Stworzenie plików startowych...  
 2. ...  
-
+  
+  
+  XDDDDDDD
