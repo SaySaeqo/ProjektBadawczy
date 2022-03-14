@@ -5,5 +5,3 @@ def polynomial(x,y):
 def get_function(n):
   if n==0:
     return polynomial
-  
-  pass
