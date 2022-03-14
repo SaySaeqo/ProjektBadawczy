@@ -10,9 +10,9 @@ stale -> TAB
 
 # Plan działania
 1. Założenie gitHuba ✓  
-2. Zakodowanie funkcji testowej:
-    a) Jakub -> 1 i 2
-    b) Tomasz -> 3 i 4
+2. Zakodowanie funkcji testowej:  
+    a) Jakub -> 1 i 2  
+    b) Tomasz -> 3 i 4  
 4. Zakodowanie naiwnego algorytmu genetycznego  
 5. Zakodowanie algorytmu gradientowego  
 6. Połączenie algorytmu gradientowego z genetycznym
