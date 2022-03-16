@@ -1,0 +1,3 @@
+MIN = 0
+MAX = 1
+PROBE_NUMBER=10
