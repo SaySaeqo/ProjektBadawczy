@@ -42,7 +42,7 @@ def genetic_func_mean_random(function,arg_num,domain_list,min_max,probe_num):
 	
 	
 	
-def genetic_func_mean_add(function,arg_num,domain_list,min_max,probe_num):
+def genetic_func_mean_change(function,arg_num,domain_list,min_max,probe_num):
 	organisms=[]
 
 	generation_counter=0
@@ -58,7 +58,7 @@ def genetic_func_mean_add(function,arg_num,domain_list,min_max,probe_num):
 		#krzyżyj organizmy(twórz ich dzieci)
 		children=cross_breeds_avg(organisms,probe_num)		
 		#mutuj dzieci
-		mutate_add_little(children,domain_list,arg_num)	
+		mutate_change_little(children,domain_list,arg_num)	
 		#ocen dzieci
 		asses(children,function)			
 		#wybierz teraz najlepiej przystosowane		
@@ -67,6 +67,7 @@ def genetic_func_mean_add(function,arg_num,domain_list,min_max,probe_num):
 		print_generation(organisms,generation_counter,function)		
 			
 	#ustawienie wyniku w zależności czego szukaliśmy		
+	asses(organisms,function)
 	if min_max == MAX:
 		organisms=sorted(organisms, key=lambda x: x.ocena, reverse=True)
 	elif min_max == MIN:
