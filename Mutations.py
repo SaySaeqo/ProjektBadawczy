@@ -1,13 +1,8 @@
 import math
 import random
+from Functions import random_data
 #from GradienFunc import gradient
 
-
-def random_data(domain_list,arg_num):
-	data=[None]*arg_num
-	for i in range(arg_num):
-		data[i]=(random.uniform(domain_list[i][0],domain_list[i][1]))
-	return data	
 	
 def mutate_new_random(generation,domain_list,arg_num):
 	mutated=[]
