@@ -21,10 +21,8 @@ def gradient(function, args):
 
 def gradient_func(function, start, min_max=Constants.MIN,\
                     learn_rate=0.001, max_iter=1_000, tol=0.0001):
-    iters = 0
+    
     for i in range(max_iter):
-        #print(x)
-        iters = i
         diff = gradient(function, start)
         diff = list(map(lambda a: a*learn_rate, diff))
         if all(map(lambda a: abs(a) < tol, diff)):
@@ -33,19 +31,4 @@ def gradient_func(function, start, min_max=Constants.MIN,\
             start[i] += (min_max == Constants.MAX)*diff[i]
             start[i] -= (min_max == Constants.MIN)*diff[i]
 
-    return iters, start
-
-## testowanie printy
-start = Functions.randomData([[-2,2], [-2,2]], 2)
-lowest = math.inf
-it = math.inf
-ar = start
-for _ in range(100):
-    iters, args = gradient_func(Functions.rosenbrock, start,
-                                learn_rate=0.00003, tol=0.0000001, max_iter=10_000)
-    fx = Functions.rosenbrock(args)
-    if lowest > fx:
-        lowest = fx
-        it = iters
-        ar = args
-print(it, ar, lowest)
+    return start
