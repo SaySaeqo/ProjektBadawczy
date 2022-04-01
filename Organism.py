@@ -49,11 +49,35 @@ def select_best(parents, children,min_max):
 
 #TO DO ----------------------------------------------------------
 
+#niestety to będzie działać tylko dla liczb wartości nieujemnych.
+#póki co w ogóle nie działa XD
 def select_roulette(parents,children,min_max):
+	'''
+	organizmy są już ocenione
+	:param parents: organizmy
+	:param children: organizmy
+	:param min_max: tryb
+	:return: new_organisms size of parents
+	'''
 	organisms = parents.copy() + children.copy()
 	#stwórz koło
 
+	#liczymy sume ocen
+	sum_asses=0
+	for i in range(len(organisms)):
+		sum_asses+=organisms[i].ocena
+
+	#ustawiamy szacowaną szanse na bycie wylosowanym
+	chances=[] # i-ta szansa odpowiada itemu organizmowu w organisms
+	if min_max == MIN:
+		pass
+	elif min_max == MAX:
+		for i in range(len(organisms)):
+			chances.append( organisms[i].ocena/sum_asses)
+
 	#n razy wylosuj organizm
+	for i in range(len(parents)):
+		pass
 
 
 	organisms = organisms[:len(organisms) - len(children)]

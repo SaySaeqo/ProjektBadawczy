@@ -1,7 +1,8 @@
 import math
 import random
-from Functions import random_data
-# from GradienFunc import gradient
+from Function import random_data
+from Gradient import gradient
+from Constants import *
 
 
 def mutate_new_random(generation, domain_list, arg_num):
@@ -23,12 +24,15 @@ def mutate_change_little(generation, domain_list, arg_num):
                     org.data[i] -= delta
 
 
-def mutate_gradient_wise(generation, domain_list, arg_num):
+def mutate_gradient_wise(generation,func, domain_list,min_max):
     mutated = []
     for org in generation:
         if random.randint(0, 100) > 95:
-            grad = gradient()
+            grad = gradient(func, org.data)
             for i in range(len(org.data)):
-                org.data[i] += grad[i]
+                if(min_max == MIN):
+                    org.data[i] -= grad[i]
+                elif min_max == MAX:
+                    org.data[i] += grad[i]
 
 # def mutateBits(data,number):

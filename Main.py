@@ -1,21 +1,17 @@
-from Functions import get_function
-from Genetic_Algorithms import *
-from Constants import *
-from Gradient_Algorithm import *
+from Tests import  *
 
 #przyklad wywołania genetycznego
 
 
-func=get_function(2)
 
+func=get_function(4)
 #nie działa, bo get function nie zwraca dziedziny!
 #print("wynik",genetic_func_mean_change(func,2,domain,MIN,PROBE_NUMBER))
 
-#print("wynik",genetic_func_mean_gradient_change_litle(get_function(1),2,[[-10,10],[-10,10],[-10,10]],MIN,PROBE_NUMBER))
+#print("wynik",genetic_func_mean_gradient_change_litle(func.function, func.arg_num, func.domain, func.min_max, PROBE_NUMBER))
+#print(gradient_algorithm(func.function,func.arg_num,func.domain,func.min_max,100))
 
-print(gradient_algorithm(get_function(2),2,[[-10,10],[-10,10]],MIN,100))
-
-
+test_algorithms()
 
 #problematyczna funkcja to ta o numerze 2 (Rosenbrocka!)
 #najrzadziej daje poprawne wyniki!

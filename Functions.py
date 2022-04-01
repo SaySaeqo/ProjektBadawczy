@@ -1,11 +1,5 @@
-import random
 
-
-def random_data(domain_list,arg_num):
-	data=[None]*arg_num
-	for i in range(arg_num):
-		data[i]=(random.uniform(domain_list[i][0],domain_list[i][1]))
-	return data	
+from Function import *
 
 def polynomial(args):
   return pow(args[0],4)+pow(args[1],4)-0.62*pow(args[0],2)-0.62*pow(args[1],2)
@@ -30,11 +24,34 @@ def goldenstein(args):
     return factors[0]*factors[1]
 
 def get_function(n):
-	if n==1:
-		return polynomial, random_data([[-2.0,2.0],[-2.0,2.0]], 2)
-	if n==2:
-		return rosenbrock, random_data([[-2.0,2.0],[-2.0,2.0]], 2)
-	if n==3:
-		return zangwill, random_data([[-150.0,150.0],[-150.0,150.0],[-150.0,150.0]], 3)
-	if n==4:
-		return goldenstein, random_data([[-2.0,2.0],[-2.0,2.0]], 2)
+    '''
+    
+    :param n: indeks funkcji 
+    :return: obiekt Function
+    '''
+    func=Function()
+    if n==1:
+        func.function = polynomial
+        func.domain=[[-10,10],[-10,10]]
+        func.arg_num=2
+        func.min_max=MIN
+        func.solutions=[[0.55672,0.55672],[-0.55672,0.55672],[0.55672,-0.55672],[-0.55672,-0.55672]]
+    if n==2:
+        func.function = rosenbrock
+        func.domain = [[-10, 10], [-10, 10]]
+        func.arg_num = 2
+        func.min_max = MIN
+        func.solutions=[[1,1]]
+    if n==3:
+        func.function = zangwill
+        func.domain = [[-150, 150], [-150, 150],[-150,150]]
+        func.arg_num = 3
+        func.min_max = MIN
+        func.solutions=[[0,0,0]]
+    if n==4:
+        func.function = goldenstein
+        func.domain = [[-2, 2], [-2, 12]]
+        func.arg_num = 2
+        func.min_max = MIN
+        func.solutions=[[0,-1]]
+    return func
