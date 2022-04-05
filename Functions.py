@@ -1,5 +1,5 @@
-
 from Function import *
+
 
 def polynomial(args):
   return pow(args[0],4)+pow(args[1],4)-0.62*pow(args[0],2)-0.62*pow(args[1],2)

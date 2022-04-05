@@ -3,7 +3,6 @@ from Tests import  *
 #przyklad wywołania genetycznego
 
 
-
 func=get_function(4)
 #nie działa, bo get function nie zwraca dziedziny!
 #print("wynik",genetic_func_mean_change(func,2,domain,MIN,PROBE_NUMBER))
