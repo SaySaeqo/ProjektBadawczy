@@ -3,6 +3,12 @@ from Genetic_Algorithms import *
 from Gradient_Algorithm import *
 from Network import network
 
+import numpy as np
+import neurolab as nl
+from scipy.optimize import fmin_bfgs
+from Functions import sigmoid
+
+
 def get_algorithm(index):
     '''
 
@@ -80,3 +86,36 @@ def test_gradient_learnrate():
                 ar = args
         print(i, ar, lowest)
 
+
+def test_neuron():
+    N = 1000
+    nrn_nmb = [3, 5, 5, 4]
+    net = network(nrn_nmb, net_gradient)
+
+    # print (net)
+    for i in range(N):
+        net.process([0, 0, 0])
+        net.correct([1, 1, 1, 1])
+        net.process([0, 1, 0])
+        net.correct([1, 0, 1, 1])
+        net.process([0, 1, 1])
+        net.correct([1, 1, 0, 0])
+        net.process([1, 1, 1])
+        net.correct([0, 0, 0, 0])
+        print(f"\r{i}/{N}", end="")
+    # print(net)
+    #                          oczekiwane wyniki:
+    print(net.process([0, 0, 0]))  # 1 1 1 1
+    print(net.process([0, 1, 0]))  # 1 0 1 1
+    print(net.process([0, 1, 1]))  # 1 1 0 0
+    print(net.process([1, 1, 1]))  # 0 0 0 0
+
+def test_neuron_libs():
+    # Define Sequential model with 3 layers
+    input = np.random.uniform(-0.5, 0.5, (10, 2))
+    print(input)
+    target = (input[:, 0] + input[:, 1]).reshape(10, 1)
+    net = nl.net.newff([[-0.5, 0.5], [-0.5, 0.5]], [5, 1])
+    err = net.train(input, target, show=15)
+    print("0.2 + 0.1 ?= ", end="")
+    print(net.sim([[0.2, 0.1]]))  # 0.2 + 0.1 array([[ 0.28757596]]) ```
