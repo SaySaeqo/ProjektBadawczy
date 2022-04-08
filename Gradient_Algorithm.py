@@ -12,9 +12,9 @@ import Constants
 # Może dodać dokładność rozwiązania jako dodatkowy argument
 
 def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
-    '''
+    """
         :type func: function
-    '''
+    """
     organisms = create_population(arg_num, domain_list, probe_numb)
 
     iterations = 0

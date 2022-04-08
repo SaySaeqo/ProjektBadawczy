@@ -19,5 +19,5 @@ class Function:
         #urzyć czy nie użyć?
         #o to jest pytanie? XD
 
-    def random_data(domain_list, arg_num):
-        return random_data(domain_list,arg_num)
+    def random_data(self):
+        return random_data(self.domain,self.arg_num)

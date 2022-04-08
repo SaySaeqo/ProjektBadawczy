@@ -16,7 +16,7 @@ for i in range(N):
     net.correct([1, 1, 0, 0])
     net.process([1, 1, 1])
     net.correct([0,0,0, 0])
-    print(i,'/',N)
+    print(f"\r{i}/{N}", end="")
 #print(net)
 #                          oczekiwane wyniki:
 print(net.process([0,0,0])) # 1 1 1 1

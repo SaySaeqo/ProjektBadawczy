@@ -1,6 +1,5 @@
 from Functions import get_function
 from Genetic_Algorithms import *
-from Constants import *
 from Gradient_Algorithm import *
 from Network import network
 
@@ -48,10 +47,10 @@ def test_algorithms():
         algoritm_name, algorithm = get_algorithm(i)
         func_errors = []
         for j in range(FUNCTIONS_NUMBER):
-            func = get_function(j+1)
+            func = get_function(j + 1)
             result = algorithm(func.function, func.arg_num, func.domain, func.min_max, PROBE_NUMBER)
             error = calc_error(result, func.solutions)
-            func_errors.append((j+1, error))
+            func_errors.append((j + 1, error))
         alg_errors = (algoritm_name, func_errors)
         stats_per_algorithm.append(alg_errors)
 
@@ -60,3 +59,24 @@ def test_algorithms():
         print(stats_per_algorithm[i][0])
         for j in range(len(stats_per_algorithm[i][1])):
             print('  ', stats_per_algorithm[i][1][j])
+
+
+# testowanie gradientu, learn_rate hardcodowany (stara wersja dla 4 funkcji)
+def test_gradient_learnrate():
+    for i in range(1, 5):
+        lowest = math.inf
+        it = math.inf
+        ar = 0
+        for _ in range(100):
+            func, start = Functions.get_function(i)
+            lr = 0.00003
+            if i == 3:
+                lr = 150.0 / 300000.0
+            args = gradient_func(func, start,
+                                 learn_rate=lr, tol=0.0000001, max_iter=10_000)
+            fx = func(args)
+            if lowest > fx:
+                lowest = fx
+                ar = args
+        print(i, ar, lowest)
+
