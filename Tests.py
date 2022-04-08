@@ -2,7 +2,7 @@ from Functions import get_function
 from Genetic_Algorithms import *
 from Constants import *
 from Gradient_Algorithm import *
-
+from Network import network
 
 def get_algorithm(index):
     '''

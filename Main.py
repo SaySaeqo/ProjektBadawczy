@@ -1,17 +1,25 @@
 from Tests import  *
+N=1000
 
-#przyklad wywołania genetycznego
+#test_algorithms()
 
+nrn_nmb=[3,5,5,4]
+net=network(nrn_nmb,net_gradient)
 
-
-func=get_function(4)
-#nie działa, bo get function nie zwraca dziedziny!
-#print("wynik",genetic_func_mean_change(func,2,domain,MIN,PROBE_NUMBER))
-
-#print("wynik",genetic_func_mean_gradient_change_litle(func.function, func.arg_num, func.domain, func.min_max, PROBE_NUMBER))
-#print(gradient_algorithm(func.function,func.arg_num,func.domain,func.min_max,100))
-
-test_algorithms()
-
-#problematyczna funkcja to ta o numerze 2 (Rosenbrocka!)
-#najrzadziej daje poprawne wyniki!
+#print (net)
+for i in range(N):
+    net.process([ 0, 0, 0])
+    net.correct([1,1,1,1])
+    net.process([0, 1, 0])
+    net.correct([1, 0, 1, 1])
+    net.process([0, 1, 1])
+    net.correct([1, 1, 0, 0])
+    net.process([1, 1, 1])
+    net.correct([0,0,0, 0])
+    print(i,'/',N)
+#print(net)
+#                          oczekiwane wyniki:
+print(net.process([0,0,0])) # 1 1 1 1
+print(net.process([0,1,0])) # 1 0 1 1
+print(net.process([0,1,1])) # 1 1 0 0
+print(net.process([1,1,1])) # 0 0 0 0
