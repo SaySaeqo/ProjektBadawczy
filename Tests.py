@@ -1,5 +1,8 @@
 import neurolab as nl
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 from Functions import get_function
 from Genetic_Algorithms import *
@@ -109,26 +112,80 @@ def test_neuron():
     print(net.process([1, 1, 1]))  # 0 0 0 0
 
 
-def test_neuron_libs():
-    # __Model z losowymi danymy__
-    # input = np.random.uniform(-0.5, 0.5, (10, 2))
-    # print(input)
-    # target = (input[:, 0] + input[:, 1]).reshape(10, 1)
-    # net = nl.net.newff([[-0.5, 0.5], [-0.5, 0.5]], [5, 1])
-    # err = net.train(input, target, show=15)
-    # print("0.2 + 0.1 ?= ", end="")
-    # print(net.sim([[0.2, 0.1]]))  # 0.2 + 0.1 array([[ 0.28757596]])
+def test_neuron_libs(lib="neurolab"):
+    if lib == "neurolab":
+        # __Model z losowymi danymy__
+        # input = np.random.uniform(-0.5, 0.5, (10, 2))
+        # print(input)
+        # target = (input[:, 0] + input[:, 1]).reshape(10, 1)
+        # net = nl.net.newff([[-0.5, 0.5], [-0.5, 0.5]], [5, 1])
+        # err = net.train(input, target, show=15)
+        # print("0.2 + 0.1 ?= ", end="")
+        # print(net.sim([[0.2, 0.1]]))  # 0.2 + 0.1 array([[ 0.28757596]])
 
-    # __Odwzorowanie tego twojego wyżej__
-    input = np.array([0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]).reshape(4, 3)
-    print(input)
-    target = np.array([1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]).reshape(4, 4)
-    net = nl.net.newff([[0, 1], [0, 1], [0, 1]], [5, 5, 4])
-    err = net.train(input, target)
+        # __Odwzorowanie tego twojego wyżej__
+        input = np.array([0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]).reshape(4, 3)
+        print(input)
+        target = np.array([1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]).reshape(4, 4)
+        net = nl.net.newff([[0, 1], [0, 1], [0, 1]], [5, 5, 4])
+        err = net.train(input, target)
 
-    print(net.sim([[0, 0, 0],[0,1,0],[0,1,1],[1,1,1]]))
-    # oczekiwane wyniki:
-    # 1 1 1 1
-    # 1 0 1 1
-    # 1 1 0 0
-    # 0 0 0 0
+        print(net.sim([[0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]]))
+        # oczekiwane wyniki:
+        # 1 1 1 1
+        # 1 0 1 1
+        # 1 1 0 0
+        # 0 0 0 0
+    elif lib == "pytorch":
+        # https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
+        class Net(nn.Module):
+
+            def __init__(self):
+                super(Net, self).__init__()
+                # 1 input image channel, 6 output channels, 5x5 square convolution
+                # kernel
+                self.conv1 = nn.Conv2d(1, 6, 5)
+                self.conv2 = nn.Conv2d(6, 16, 5)
+                # an affine operation: y = Wx + b
+                self.fc1 = nn.Linear(16 * 5 * 5, 120)  # 5*5 from image dimension
+                self.fc2 = nn.Linear(120, 84)
+                self.fc3 = nn.Linear(84, 10)
+
+            def forward(self, x):
+                # Max pooling over a (2, 2) window
+                x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+                # If the size is a square, you can specify with a single number
+                x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+                x = torch.flatten(x, 1)  # flatten all dimensions except the batch dimension
+                x = F.relu(self.fc1(x))
+                x = F.relu(self.fc2(x))
+                x = self.fc3(x)
+                return x
+
+        # network
+        net = Net()
+        input = torch.randn(1, 1, 32, 32)
+        print("input:")
+        print(input)
+        out = net(input)
+        print("output:")
+        print(out)
+
+        # loss function
+        output = net(input)
+        target = torch.randn(10)  # a dummy target, for example
+        target = target.view(1, -1)  # make it the same shape as output
+        criterion = nn.MSELoss()
+
+        loss = criterion(output, target)
+
+        net.zero_grad()
+        loss.backward()
+
+        learning_rate = 0.01
+        for f in net.parameters():
+            f.data.sub_(f.grad.data * learning_rate)
+
+        out = net(input)
+        print("output:")
+        print(out)
