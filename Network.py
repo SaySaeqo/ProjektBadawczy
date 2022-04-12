@@ -1,4 +1,3 @@
-import numpy as nmp
 from Functions import sigmoid
 import numpy as nmp
 
@@ -50,7 +49,7 @@ class network:
         :param args:
         :return:
         """
-        self.neuron_values[0] = args;
+        self.neuron_values[0] = args
         for i in range(1, self.layers):
             self.neuron_values[i] = nmp.matmul(self.matrices[i], self.neuron_values[i - 1])
             self.neuron_values[i] = nmp.add(self.neuron_values[i], self.biases[i])

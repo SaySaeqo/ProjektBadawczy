@@ -1,12 +1,10 @@
+import neurolab as nl
+import numpy as np
+
 from Functions import get_function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
 from Network import network
-
-import numpy as np
-import neurolab as nl
-from scipy.optimize import fmin_bfgs
-from Functions import sigmoid
 
 
 def get_algorithm(index):
@@ -110,12 +108,27 @@ def test_neuron():
     print(net.process([0, 1, 1]))  # 1 1 0 0
     print(net.process([1, 1, 1]))  # 0 0 0 0
 
+
 def test_neuron_libs():
-    # Define Sequential model with 3 layers
-    input = np.random.uniform(-0.5, 0.5, (10, 2))
+    # __Model z losowymi danymy__
+    # input = np.random.uniform(-0.5, 0.5, (10, 2))
+    # print(input)
+    # target = (input[:, 0] + input[:, 1]).reshape(10, 1)
+    # net = nl.net.newff([[-0.5, 0.5], [-0.5, 0.5]], [5, 1])
+    # err = net.train(input, target, show=15)
+    # print("0.2 + 0.1 ?= ", end="")
+    # print(net.sim([[0.2, 0.1]]))  # 0.2 + 0.1 array([[ 0.28757596]])
+
+    # __Odwzorowanie tego twojego wyżej__
+    input = np.array([0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]).reshape(4, 3)
     print(input)
-    target = (input[:, 0] + input[:, 1]).reshape(10, 1)
-    net = nl.net.newff([[-0.5, 0.5], [-0.5, 0.5]], [5, 1])
-    err = net.train(input, target, show=15)
-    print("0.2 + 0.1 ?= ", end="")
-    print(net.sim([[0.2, 0.1]]))  # 0.2 + 0.1 array([[ 0.28757596]]) ```
+    target = np.array([1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]).reshape(4, 4)
+    net = nl.net.newff([[0, 1], [0, 1], [0, 1]], [5, 5, 4])
+    err = net.train(input, target)
+
+    print(net.sim([[0, 0, 0],[0,1,0],[0,1,1],[1,1,1]]))
+    # oczekiwane wyniki:
+    # 1 1 1 1
+    # 1 0 1 1
+    # 1 1 0 0
+    # 0 0 0 0
