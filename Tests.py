@@ -189,3 +189,10 @@ def test_neuron_libs(lib="neurolab"):
         out = net(input)
         print("output:")
         print(out)
+
+        # With square kernels and equal stride
+        m = nn.Conv2d(16, 33, 3)
+        input = torch.randn(20, 16, 50, 100)
+        print("input test\n", input)
+        output = m(input)
+        #print("test \n",output)
