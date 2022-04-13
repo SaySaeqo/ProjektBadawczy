@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 
 from Functions import get_function
 from Genetic_Algorithms import *
@@ -142,21 +143,11 @@ def test_neuron_libs(lib="neurolab"):
 
             def __init__(self):
                 super(Net, self).__init__()
-                # 1 input image channel, 6 output channels, 5x5 square convolution
-                # kernel
-                self.conv1 = nn.Conv2d(1, 6, 5)
-                self.conv2 = nn.Conv2d(6, 16, 5)
-                # an affine operation: y = Wx + b
-                self.fc1 = nn.Linear(16 * 5 * 5, 120)  # 5*5 from image dimension
-                self.fc2 = nn.Linear(120, 84)
-                self.fc3 = nn.Linear(84, 10)
+                self.fc1 = nn.Linear(3, 5)
+                self.fc2 = nn.Linear(5, 5)
+                self.fc3 = nn.Linear(5, 4)
 
             def forward(self, x):
-                # Max pooling over a (2, 2) window
-                x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-                # If the size is a square, you can specify with a single number
-                x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-                x = torch.flatten(x, 1)  # flatten all dimensions except the batch dimension
                 x = F.relu(self.fc1(x))
                 x = F.relu(self.fc2(x))
                 x = self.fc3(x)
@@ -164,35 +155,36 @@ def test_neuron_libs(lib="neurolab"):
 
         # network
         net = Net()
-        input = torch.randn(1, 1, 32, 32)
+        input = torch.Tensor([[0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]])
         print("input:")
         print(input)
         out = net(input)
-        print("output:")
+        print("output (random weights):")
         print(out)
 
         # loss function
-        output = net(input)
-        target = torch.randn(10)  # a dummy target, for example
-        target = target.view(1, -1)  # make it the same shape as output
         criterion = nn.MSELoss()
 
-        loss = criterion(output, target)
+        output = out
+        target = torch.Tensor([[1, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 0], [0, 0, 0, 0]])
+        # target = target.view(1, -1)  # make it the same shape as output
 
-        net.zero_grad()
-        loss.backward()
-
-        learning_rate = 0.01
-        for f in net.parameters():
-            f.data.sub_(f.grad.data * learning_rate)
+        # create your optimizer
+        optimizer = optim.SGD(net.parameters(), lr=0.01)
+        N = 2**15
+        for i in range(N):
+            # training
+            optimizer.zero_grad()  # zero the gradient buffers
+            output = net(input)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()  # Does the update
 
         out = net(input)
         print("output:")
         print(out)
-
-        # With square kernels and equal stride
-        m = nn.Conv2d(16, 33, 3)
-        input = torch.randn(20, 16, 50, 100)
-        print("input test\n", input)
-        output = m(input)
-        #print("test \n",output)
+        # oczekiwane wyniki:
+        # 1 1 1 1
+        # 1 0 1 1
+        # 1 1 0 0
+        # 0 0 0 0
