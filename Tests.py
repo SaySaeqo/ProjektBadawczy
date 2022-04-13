@@ -115,6 +115,8 @@ def test_neuron():
 
 def test_neuron_libs(lib="neurolab"):
     if lib == "neurolab":
+        print("NEUROLAB LIBRARY\n")
+
         # __Model z losowymi danymy__
         # input = np.random.uniform(-0.5, 0.5, (10, 2))
         # print(input)
@@ -138,6 +140,7 @@ def test_neuron_libs(lib="neurolab"):
         # 1 1 0 0
         # 0 0 0 0
     elif lib == "pytorch":
+        print("PYTORCH LIBRARY\n")
         # https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
         class Net(nn.Module):
 
@@ -179,6 +182,7 @@ def test_neuron_libs(lib="neurolab"):
             loss = criterion(output, target)
             loss.backward()
             optimizer.step()  # Does the update
+            print(f"\r{i}/{N}", end="")
 
         out = net(input)
         print("output:")
