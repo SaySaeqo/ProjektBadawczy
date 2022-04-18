@@ -1,7 +1,15 @@
+import neurolab as nl
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
 from Functions import get_function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
 from Network import network
+
 
 def get_algorithm(index):
     '''
@@ -80,3 +88,107 @@ def test_gradient_learnrate():
                 ar = args
         print(i, ar, lowest)
 
+
+def test_neuron():
+    N = 1000
+    nrn_nmb = [3, 5, 5, 4]
+    net = network(nrn_nmb, net_gradient)
+
+    # print (net)
+    for i in range(N):
+        net.process([0, 0, 0])
+        net.correct([1, 1, 1, 1])
+        net.process([0, 1, 0])
+        net.correct([1, 0, 1, 1])
+        net.process([0, 1, 1])
+        net.correct([1, 1, 0, 0])
+        net.process([1, 1, 1])
+        net.correct([0, 0, 0, 0])
+        print(f"\r{i}/{N}", end="")
+    # print(net)
+    #                          oczekiwane wyniki:
+    print(net.process([0, 0, 0]))  # 1 1 1 1
+    print(net.process([0, 1, 0]))  # 1 0 1 1
+    print(net.process([0, 1, 1]))  # 1 1 0 0
+    print(net.process([1, 1, 1]))  # 0 0 0 0
+
+
+def test_neuron_libs(lib="neurolab"):
+    if lib == "neurolab":
+        print("NEUROLAB LIBRARY\n")
+
+        # __Model z losowymi danymy__
+        # input = np.random.uniform(-0.5, 0.5, (10, 2))
+        # print(input)
+        # target = (input[:, 0] + input[:, 1]).reshape(10, 1)
+        # net = nl.net.newff([[-0.5, 0.5], [-0.5, 0.5]], [5, 1])
+        # err = net.train(input, target, show=15)
+        # print("0.2 + 0.1 ?= ", end="")
+        # print(net.sim([[0.2, 0.1]]))  # 0.2 + 0.1 array([[ 0.28757596]])
+
+        # __Odwzorowanie tego twojego wyżej__
+        input = np.array([0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1]).reshape(4, 3)
+        print(input)
+        target = np.array([1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]).reshape(4, 4)
+        net = nl.net.newff([[0, 1], [0, 1], [0, 1]], [5, 5, 4])
+        err = net.train(input, target)
+
+        print(net.sim([[0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]]))
+        # oczekiwane wyniki:
+        # 1 1 1 1
+        # 1 0 1 1
+        # 1 1 0 0
+        # 0 0 0 0
+    elif lib == "pytorch":
+        print("PYTORCH LIBRARY\n")
+        # https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
+        class Net(nn.Module):
+
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = nn.Linear(3, 5)
+                self.fc2 = nn.Linear(5, 5)
+                self.fc3 = nn.Linear(5, 4)
+
+            def forward(self, x):
+                x = F.relu(self.fc1(x))
+                x = F.relu(self.fc2(x))
+                x = self.fc3(x)
+                return x
+
+        # network
+        net = Net()
+        input = torch.Tensor([[0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]])
+        print("input:")
+        print(input)
+        out = net(input)
+        print("output (random weights):")
+        print(out)
+
+        # loss function
+        criterion = nn.MSELoss()
+
+        output = out
+        target = torch.Tensor([[1, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 0], [0, 0, 0, 0]])
+        # target = target.view(1, -1)  # make it the same shape as output
+
+        # create your optimizer
+        optimizer = optim.SGD(net.parameters(), lr=0.01)
+        N = 2**15
+        for i in range(N):
+            # training
+            optimizer.zero_grad()  # zero the gradient buffers
+            output = net(input)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()  # Does the update
+            print(f"\r{i}/{N}", end="")
+
+        out = net(input)
+        print("output:")
+        print(out)
+        # oczekiwane wyniki:
+        # 1 1 1 1
+        # 1 0 1 1
+        # 1 1 0 0
+        # 0 0 0 0
