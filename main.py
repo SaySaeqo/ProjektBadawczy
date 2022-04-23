@@ -1,4 +1,4 @@
-from Tests import  *
+from Tests import *
 
 #test_algorithms()
 

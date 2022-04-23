@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from Functions import get_function
+from utils import Function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
 from Network import network
@@ -54,11 +54,12 @@ def test_algorithms():
         # testujemy każdą funkcję
         algoritm_name, algorithm = get_algorithm(i)
         func_errors = []
-        for j in range(FUNCTIONS_NUMBER):
-            func = get_function(j + 1)
+        j = 0
+        for func in Function.get_all():
             result = algorithm(func.function, func.arg_num, func.domain, func.min_max, PROBE_NUMBER)
             error = calc_error(result, func.solutions)
             func_errors.append((j + 1, error))
+            j += 1
         alg_errors = (algoritm_name, func_errors)
         stats_per_algorithm.append(alg_errors)
 
@@ -75,8 +76,10 @@ def test_gradient_learnrate():
         lowest = math.inf
         it = math.inf
         ar = 0
+        functions = Function.get_all()
         for _ in range(100):
-            func, start = Functions.get_function(i)
+            func = functions[i]
+            start = func.random_data()
             lr = 0.00003
             if i == 3:
                 lr = 150.0 / 300000.0

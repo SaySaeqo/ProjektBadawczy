@@ -1,6 +1,6 @@
 import copy
 
-from Functions import sigmoid
+from utils import sigmoid
 from Network import network
 
 
@@ -89,13 +89,13 @@ def net_derivative(layer_index, neruon_index, net: network, expected_result, wei
 
 
 def net_gradient(neuron_values, expected_result, net: network):
-    '''
+    """
     :param neuron_values: tablica wektorów. w każdym wektorze sa wartości aktywacji poszczególnych neuronów
     :param layers:
     :param matrices:
     :param biases:
     :return:
-    '''
+    """
     matrices_der = copy.deepcopy(net.matrices)
     biases_der = copy.deepcopy(net.biases)
 

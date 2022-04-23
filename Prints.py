@@ -1,9 +1,3 @@
-import math
-
-import Functions
-from Gradient_Algorithm import gradient_func
-
-
 def print_generation(generation,n,function):
 	print("generation:",n)	
 	for org in generation:

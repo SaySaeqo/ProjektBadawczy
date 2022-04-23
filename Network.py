@@ -1,7 +1,5 @@
-from Functions import sigmoid
+from utils import sigmoid
 import numpy as nmp
-
-from Functions import sigmoid
 
 
 class network:

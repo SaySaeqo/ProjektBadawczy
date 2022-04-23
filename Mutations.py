@@ -1,7 +1,7 @@
 import math
 import random
 
-from Function import random_data
+from utils import random_data
 from Gradient import gradient
 from Constants import *
 
