@@ -1,14 +1,14 @@
 import neurolab as nl
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
+#import torch
+#import torch.nn as nn
+#import torch.nn.functional as F
+#import torch.optim as optim
 
 from Functions import get_function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
-from Network import network
+from Network import *
 
 
 def get_algorithm(index):
@@ -139,6 +139,7 @@ def test_neuron_libs(lib="neurolab"):
         # 1 0 1 1
         # 1 1 0 0
         # 0 0 0 0
+    '''
     elif lib == "pytorch":
         print("PYTORCH LIBRARY\n")
         # https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
@@ -192,3 +193,4 @@ def test_neuron_libs(lib="neurolab"):
         # 1 0 1 1
         # 1 1 0 0
         # 0 0 0 0
+    '''

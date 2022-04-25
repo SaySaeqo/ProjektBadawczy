@@ -1,6 +1,9 @@
+import copy
+import math
+
 from Functions import sigmoid
 import numpy as nmp
-
+import random
 from Functions import sigmoid
 
 
@@ -72,6 +75,13 @@ class network:
             self.biases[i] = nmp.subtract(self.biases[i], biases_der[i])
         return matrices_der, biases_der
 
+    def asses(self,expected_result):
+        sum=0
+        for i in range(len(self.neuron_values[self.layers-1])):
+            sum+=(self.neuron_values[self.layers-1][i]-expected_result[i])**2
+            #sum+=abs(self.neuron_values[self.layers-1][i]-expected_result[i])
+        return sum
+
     def create_rand_matrix(self, x, y):
         """ tworzy macierz z losowymi wartościami o wymiarach x wierszy na y kolumn"""
 
@@ -118,3 +128,145 @@ class network:
 
             text += '\n'
         return text
+
+
+
+class geneticNetwork(network):
+    '''
+    pole nets zawiera wszystkie sieci
+    net_numb ich liczbe
+    '''
+    def __init__(self, nrn_nmb, net_numb):
+        self.learning = False
+        self.net_numb=net_numb
+        self.nets=[None]*net_numb
+        self.args=[]
+        self.nrn_nmb = nrn_nmb
+        self.expected_result=[]
+        for i in range(net_numb):
+            self.nets[i]=network(nrn_nmb,None)
+
+    def start_learning(self):
+        '''bedzie to mówiło, że podczas process, '''
+        self.learning = True
+
+
+    def stop_learning(self):
+        self.learning = False
+
+
+    def process(self, args):
+        self.args = args
+        """
+        wywołuje tę samą metodę co siec, lecz dla tej o indeksie zero.
+        tam powinna być najskuteczniejsza
+        """
+        if self.learning:
+            for net in self.nets:
+                net.process(args)
+        else:
+            return self.nets[0].process(args)
+
+    def average_net_weight(self,net1, net2):
+        '''pierwsza próba krzyżowania'''
+        net = network(self.nrn_nmb,None)
+        for layer in range(1, net1.layers):
+            for row in range(len(net1.matrices[layer])):
+                for col in range(len(net1.matrices[layer][row])):
+                    net.matrices[layer][row][col]=(net1.matrices[layer][row][col]+net2.matrices[layer][row][col])/2
+        return net
+
+    def radius_cross(self,net1,net2):
+        net = copy.deepcopy(net1)
+
+        for layer in range(1, net1.layers):
+            for row in range(len(net1.matrices[layer])):
+                for col in range(len(net1.matrices[layer][row])):
+                    distance = abs(net1.matrices[layer][row][col]-net2.matrices[layer][row][col])
+                    net1.matrices[layer][row][col] += random.uniform(-1,1)*distance
+
+        return net
+
+
+
+    def cross_nets(self):
+        nets=copy.deepcopy(self.nets)
+        children=[]
+        for i in range(math.floor(self.net_numb/2)):
+            parents = random.sample(nets, 2)
+
+            nets.remove(parents[0])
+            nets.remove(parents[1])
+
+            # usrednianie argumentow + tworzenie nowej sieci potomnej
+            #avg_net = self.average_net_weight(parents[0], parents[1])
+            avg_net = self.radius_cross(parents[0], parents[1])
+
+            children.append(avg_net)
+        #zwraca krzyżówki
+        return children
+
+    def mutate_nets(self,crossed):
+        '''mutuje potencjalnie wszystkie sieci'''
+        for net in crossed:
+            for layer in range(1, net.layers):
+                for row in range(len(net.matrices[layer])):
+                    #modyfikacja wag
+                    for col in range(len(net.matrices[layer][row])):
+                        if random.randint(0, 100) > 75:
+                            delta = 1
+                            if random.randint(0, 1) == 1:
+                                net.matrices[layer][row][col]+= delta
+                            else:
+                                net.matrices[layer][row][col] -= delta
+                    #mutacja biasów
+                    if random.randint(0, 100) > 75:
+                        delta = 1
+                        if random.randint(0, 1) == 1:
+                            net.biases[layer][row] += delta
+                        else:
+                            net.biases[layer][row] -= delta
+
+
+    def asses_nets(self):
+        assesment=[0]*self.net_numb
+        for i in self.net_numb:
+            assesment[i]=self.nets[i].asses(self.expected_result)
+
+    def sort_nets(self,nets):
+        #assesments=self.asses_nets()
+        sorted_nets = sorted(nets, key=lambda x: x.asses(self.expected_result), reverse=False)
+        return sorted_nets
+
+    def select_best(self,crossed):
+        nets=self.nets.copy()+crossed.copy()
+        sorted=self.sort_nets(nets)
+        best = sorted[:len(nets) - len(crossed)]
+        return best
+
+    def correct(self, expected_result):
+        """
+        correct genetyczny
+        """
+        self.expected_result = expected_result
+
+        #wpierw symulowanie każdej sieci
+        for net in self.nets:
+            net.process(self.args)
+
+        #i teraz genetyka
+        crossed = self.cross_nets()
+        for net in crossed:
+            net.process(self.args)
+
+        self.mutate_nets(crossed)
+        self.nets=self.select_best(crossed)
+
+
+    def print_assesments(self, expected=[]):
+        if expected == []:
+            for net in self.nets:
+                print(net.asses(self.expected_result))
+        else:
+            for net in self.nets:
+                print(net.asses(expected))
