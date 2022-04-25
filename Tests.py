@@ -8,7 +8,7 @@ import torch.optim as optim
 from utils import Function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
-from Network import network
+from Network import Network
 
 
 def get_algorithm(index):
@@ -95,7 +95,7 @@ def test_gradient_learnrate():
 def test_neuron():
     N = 1000
     nrn_nmb = [3, 5, 5, 4]
-    net = network(nrn_nmb, net_gradient)
+    net = Network(nrn_nmb, net_gradient)
 
     # print (net)
     for i in range(N):

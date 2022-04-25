@@ -7,6 +7,11 @@ from Constants import *
 
 
 def random_data(domain_list):
+    """
+
+    :param domain_list:
+    :return: list of randomly generated arguments
+    """
     data = []
     for i in range(len(domain_list)):
         data.append(random.uniform(domain_list[i][0], domain_list[i][1]))
@@ -14,7 +19,11 @@ def random_data(domain_list):
 
 
 def sigmoid(x):
-    """funkcja zwracają liczbę od 0 do 1 dla dowolnej liczby rzeczywistej"""
+    """
+
+    :param x: real number
+    :return: number beetwen 0 and 1
+    """
     return 1 / (1 + nmp.exp(-x))
 
 
@@ -27,10 +36,22 @@ class Function:
         self.solutions = solutions
 
     def random_data(self):
-        return random_data(self.domain, self.arg_num)
+        """
+
+            :param domain_list:
+            :return: list of randomly generated arguments
+            """
+        return random_data(self.domain)
+
+    def __call__(self, *args, **kwargs):
+        return self.function(*args, **kwargs)
 
     @staticmethod
     def get_all() -> list:
+        """
+
+        :return: list of all functions to test (Function type elements)
+        """
         return [
             Function(
                 tf.polynomial,  # 0
