@@ -36,14 +36,6 @@ def calc_z_L(layer_index, neuron_index, net: network):
     return z_L
 
 
-def cost(result, expected):
-    '''w sumie nie używane XD, ale do genetycznego może się przydać'''
-    sum = 0
-    for i in range(len(result)):
-        sum += (result[i] - expected[i]) ** 2
-    return sum
-
-
 def net_derivative(layer_index, neruon_index, net: network, expected_result, weight_index=0, modify_weight=False,
                    modify_bias=False, calc_neuron=False):
     """
@@ -75,15 +67,18 @@ def net_derivative(layer_index, neruon_index, net: network, expected_result, wei
         if layer_index == net.layers - 1:
             # to prosta pochodna po Co
             grad = 2 * (net.neuron_values[layer_index][neruon_index] - expected_result[neruon_index])
+            #grad = batch_error[neruon_index]
+            net.neuron_gradients[layer_index ][neruon_index] = grad
         else:
             # rekurencja
             grad = 0
             for i in range(net.nrn_nmb[layer_index + 1]):
-                # z_(L+1) tutaj to jest tak właściwie, ale nie da się plusa napisać w nazwie zmiennej
+                # z_(L+1) tutaj to jest tak właściwie, ale nie da się plusa napisać w nazwie zmiennejv
                 z_L = calc_z_L(layer_index + 1, i, net)
                 # suma : w_jk^(L+1) + sigmoid'(z_j^(L+1) * dc/daj^(L+1)
-                grad += net.matrices[layer_index + 1][i][neruon_index] * sigmoid_derivative(z_L) * net_derivative(
-                    layer_index + 1, i, net, expected_result, calc_neuron=True)
+                #grad += net.matrices[layer_index + 1][i][neruon_index] * sigmoid_derivative(z_L) * net_derivative(layer_index + 1, i, net, batch_error, calc_neuron=True)
+                grad += net.matrices[layer_index + 1][i][neruon_index] * sigmoid_derivative(z_L) * net.neuron_gradients[layer_index+1][i]
+                net.neuron_gradients[layer_index][neruon_index] = grad
 
     return grad
 
@@ -100,11 +95,11 @@ def net_gradient(neuron_values, expected_result, net: network):
     biases_der = copy.deepcopy(net.biases)
 
     # dla kazsdej warstwy
-    for i in range(1, net.layers):
+    for i in range(net.layers-1,0,-1):
         # dla każdego neuronu z tej warstwy
-        for j in range(net.nrn_nmb[i]):
+        for j in range(net.nrn_nmb[i]-1,-1,-1):
             # policz wagi od neuronów z lewej warstwy
-            for k in range(net.nrn_nmb[i - 1]):
+            for k in range(net.nrn_nmb[i - 1]-1,-1,-1):
                 matrices_der[i][j][k] = net_derivative(i, j, net, expected_result, weight_index=k, modify_weight=True)
             # policz bias dla neuronu
             biases_der[i][j] = net_derivative(i, j, net, expected_result, modify_bias=True)

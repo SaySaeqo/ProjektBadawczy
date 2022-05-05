@@ -7,6 +7,13 @@ import random
 from Functions import sigmoid
 
 
+def cost(result, expected):
+    sum = 0
+    for i in range(len(result)):
+        sum += (result[i] - expected[i]) ** 2
+    return sum
+
+
 class network:
     '''
     matrices-macierze wag. wagi itej warstwy są na itej pozycji (pierwsza element tej tablicy to None, bo zerowa
@@ -17,7 +24,7 @@ class network:
     correct_function
     '''
 
-    def __init__(self, nrn_nmb, correct_function):
+    def __init__(self, nrn_nmb, correct_function, batch_size):
         """
         :param nrn_nmb: neurons number per layer, czytając od lewej
         :param correct_function: funkcja ucząca/poprawiająca sieć
@@ -28,7 +35,12 @@ class network:
         self.biases = [None] * (self.layers)
         self.nrn_nmb = nrn_nmb
         self.neuron_values = [None] * (self.layers)
+        self.neuron_gradients = [[None]* neurons for neurons in nrn_nmb]
         self.correct_function = correct_function
+        self.batch_size = batch_size
+        self.batch_iteration = 0
+        self.batch_matrix_grad = self.create_zero_matrices_batch()
+        self.batch_bias_grad = self.create_zero_biases_batch()
 
         # utworzenie tablicy macierzy wag
         matrix = self.create_X_matrix(nrn_nmb[0], 1)
@@ -68,18 +80,46 @@ class network:
         :return: 2 obiekty: gradient wag, gradient biasów
         """
 
+        self.batch_iteration += 1
+
         matrices_der, biases_der = self.correct_function(self.neuron_values, expected_result, self)
         # ulepsz każdą warstwę
+
+        #batchowanie
         for i in range(1, self.layers):
-            self.matrices[i] = nmp.subtract(self.matrices[i], matrices_der[i])
-            self.biases[i] = nmp.subtract(self.biases[i], biases_der[i])
+            self.batch_matrix_grad[i] = nmp.add(self.batch_matrix_grad[i], matrices_der[i])
+            self.batch_bias_grad[i] = nmp.add(self.batch_bias_grad[i], biases_der[i])
+
+
+        #update wag po zapełnieniu batchu
+        if self.batch_iteration == self.batch_size:
+            # matrices_der, biases_der = self.correct_function(self.neuron_values, expected_result, self)
+
+            "uśrednianie"
+            for matrix in self.batch_matrix_grad[1:]:
+                for row in matrix:
+                    for val in row:
+                        val = val / self.batch_size # uśrednianie
+
+            for layer in self.batch_bias_grad[1:]:
+                for val in layer:
+                    val = val / self.batch_size # uśrednianie
+
+            for i in range(1, self.layers):
+                self.matrices[i] = nmp.subtract(self.matrices[i], self.batch_matrix_grad[i])
+                self.biases[i] = nmp.subtract(self.biases[i],  self.batch_bias_grad[i])
+
+            self.batch_matrix_grad = self.create_zero_matrices_batch()
+            self.batch_bias_grad = self.create_zero_biases_batch()
+            self.batch_iteration = 0
+
         return matrices_der, biases_der
 
-    def asses(self,expected_result):
-        sum=0
-        for i in range(len(self.neuron_values[self.layers-1])):
-            sum+=(self.neuron_values[self.layers-1][i]-expected_result[i])**2
-            #sum+=abs(self.neuron_values[self.layers-1][i]-expected_result[i])
+    def asses(self, expected_result):
+        sum = 0
+        for i in range(len(self.neuron_values[self.layers - 1])):
+            sum += (self.neuron_values[self.layers - 1][i] - expected_result[i]) ** 2
+            # sum+=abs(self.neuron_values[self.layers-1][i]-expected_result[i])
         return sum
 
     def create_rand_matrix(self, x, y):
@@ -94,6 +134,38 @@ class network:
 
         matrix = [['x'] * y] * x  # póki co nie losowe XD
         return matrix
+
+    def create_zero_matrices_batch(self):
+        matrices=[None]*self.layers
+        for i in reversed(range(1, self.layers)):
+            matrices[i] = nmp.zeros((self.nrn_nmb[i], self.nrn_nmb[i - 1]))
+        return matrices
+
+    def create_zero_biases_batch(self):
+        biases=[None]*self.layers
+        for i in reversed(range(1, self.layers)):
+            biases[i] = nmp.zeros(self.nrn_nmb[i])
+        return biases
+
+    def start_learning(self):
+        '''bedzie to mówiło, że podczas process, '''
+        self.learning = True
+
+    def stop_learning(self):
+        self.learning = False
+
+    def total_error(self, input, expected_result):
+        error = 0
+        was_learning = False
+        if (self.learning == True):
+            was_learning = True
+            self.learning = False
+        for i in range(len(input)):
+            result = self.process(input[i])
+            error += cost(result, expected_result[i])
+        if (was_learning == True):
+            self.learning = True
+        return error
 
     def __str__(self):
         """ahh"""
@@ -130,30 +202,24 @@ class network:
         return text
 
 
-
 class geneticNetwork(network):
     '''
     pole nets zawiera wszystkie sieci
     net_numb ich liczbe
     '''
-    def __init__(self, nrn_nmb, net_numb):
+
+    def __init__(self, nrn_nmb, net_numb, batch_size):
         self.learning = False
-        self.net_numb=net_numb
-        self.nets=[None]*net_numb
-        self.args=[]
+        self.net_numb = net_numb
+        self.nets = [None] * net_numb
+        self.args = []
         self.nrn_nmb = nrn_nmb
-        self.expected_result=[]
+        self.expected_result = []
+        self.last_args = [0]*nrn_nmb[0]
+        self.last_expected = [0]*(nrn_nmb[-1])
+
         for i in range(net_numb):
-            self.nets[i]=network(nrn_nmb,None)
-
-    def start_learning(self):
-        '''bedzie to mówiło, że podczas process, '''
-        self.learning = True
-
-
-    def stop_learning(self):
-        self.learning = False
-
+            self.nets[i] = network(nrn_nmb, None, batch_size)
 
     def process(self, args):
         self.args = args
@@ -164,62 +230,64 @@ class geneticNetwork(network):
         if self.learning:
             for net in self.nets:
                 net.process(args)
+            return self.nets[0].process(args)
         else:
             return self.nets[0].process(args)
 
-    def average_net_weight(self,net1, net2):
+    def average_net_weight(self, net1, net2):
         '''pierwsza próba krzyżowania'''
-        net = network(self.nrn_nmb,None)
+        net = network(self.nrn_nmb, None)
         for layer in range(1, net1.layers):
             for row in range(len(net1.matrices[layer])):
                 for col in range(len(net1.matrices[layer][row])):
-                    net.matrices[layer][row][col]=(net1.matrices[layer][row][col]+net2.matrices[layer][row][col])/2
+                    net.matrices[layer][row][col] = (net1.matrices[layer][row][col] + net2.matrices[layer][row][
+                        col]) / 2
         return net
 
-    def radius_cross(self,net1,net2):
+    def radius_cross(self, net1, net2):
         net = copy.deepcopy(net1)
 
         for layer in range(1, net1.layers):
             for row in range(len(net1.matrices[layer])):
                 for col in range(len(net1.matrices[layer][row])):
-                    distance = abs(net1.matrices[layer][row][col]-net2.matrices[layer][row][col])
-                    net1.matrices[layer][row][col] += random.uniform(-1,1)*distance
+                    distance = abs(net1.matrices[layer][row][col] - net2.matrices[layer][row][col])
+                    net1.matrices[layer][row][col] += random.uniform(-1, 1) * distance
+                distance = abs(net1.biases[layer][row] - net2.biases[layer][row])
+                net1.biases[layer][row] += random.uniform(-1, 1) * distance
 
         return net
 
-
-
     def cross_nets(self):
-        nets=copy.deepcopy(self.nets)
-        children=[]
-        for i in range(math.floor(self.net_numb/2)):
+        nets = copy.deepcopy(self.nets)
+        children = []
+        for i in range(math.floor(self.net_numb / 2)):
             parents = random.sample(nets, 2)
 
             nets.remove(parents[0])
             nets.remove(parents[1])
 
             # usrednianie argumentow + tworzenie nowej sieci potomnej
-            #avg_net = self.average_net_weight(parents[0], parents[1])
+            # avg_net = self.average_net_weight(parents[0], parents[1])
             avg_net = self.radius_cross(parents[0], parents[1])
 
             children.append(avg_net)
-        #zwraca krzyżówki
+        # zwraca krzyżówki
         return children
 
-    def mutate_nets(self,crossed):
+    def mutate_nets(self, crossed):
         '''mutuje potencjalnie wszystkie sieci'''
         for net in crossed:
             for layer in range(1, net.layers):
                 for row in range(len(net.matrices[layer])):
-                    #modyfikacja wag
+                    # modyfikacja wag
                     for col in range(len(net.matrices[layer][row])):
                         if random.randint(0, 100) > 75:
                             delta = 1
                             if random.randint(0, 1) == 1:
-                                net.matrices[layer][row][col]+= delta
+                                net.matrices[layer][row][col] += delta
                             else:
                                 net.matrices[layer][row][col] -= delta
-                    #mutacja biasów
+                    # mutacja biasów
                     if random.randint(0, 100) > 75:
                         delta = 1
                         if random.randint(0, 1) == 1:
@@ -227,20 +295,28 @@ class geneticNetwork(network):
                         else:
                             net.biases[layer][row] -= delta
 
-
     def asses_nets(self):
-        assesment=[0]*self.net_numb
+        assesment = [0] * self.net_numb
         for i in self.net_numb:
-            assesment[i]=self.nets[i].asses(self.expected_result)
+            assesment[i] = self.nets[i].asses(self.expected_result)
 
-    def sort_nets(self,nets):
-        #assesments=self.asses_nets()
-        sorted_nets = sorted(nets, key=lambda x: x.asses(self.expected_result), reverse=False)
+    def sort_nets(self, nets):
+        # assesments=self.asses_nets()
+
+        #wpierw ocena nowego wejścia
+        nets = [(net, net.asses(self.expected_result)) for net in nets]
+        #potem dodajemy stare wejscie
+        for net in nets:
+            net[0].process(self.last_args)
+        nets = [(net[0], (net[1] + net[0].asses(self.last_expected))/2) for net in nets]
+        # sorted_nets = sorted(nets, key=lambda x: x.asses(self.expected_result), reverse=False)
+        sorted_nets = sorted(nets, key=lambda x: x[1], reverse=False)
+        sorted_nets = [net[0] for net in sorted_nets]
         return sorted_nets
 
-    def select_best(self,crossed):
-        nets=self.nets.copy()+crossed.copy()
-        sorted=self.sort_nets(nets)
+    def select_best(self, crossed):
+        nets = self.nets.copy() + crossed.copy()
+        sorted = self.sort_nets(nets)
         best = sorted[:len(nets) - len(crossed)]
         return best
 
@@ -248,20 +324,41 @@ class geneticNetwork(network):
         """
         correct genetyczny
         """
+
         self.expected_result = expected_result
 
-        #wpierw symulowanie każdej sieci
+        prev_best = self.nets[:5]
+
+        # wpierw symulowanie każdej sieci
         for net in self.nets:
             net.process(self.args)
 
-        #i teraz genetyka
+        # i teraz genetyka
         crossed = self.cross_nets()
         for net in crossed:
             net.process(self.args)
 
         self.mutate_nets(crossed)
-        self.nets=self.select_best(crossed)
+        all = crossed + prev_best
+        self.nets = self.select_best(all)
 
+        self.last_expected = expected_result
+        self.last_args = self.args
+
+    def total_error(self, input, expected_result):
+        error = 0
+        was_learning = False
+        if (self.learning == True):
+            was_learning = True
+            self.nets[0].stop_learning()
+        for i in range(len(input)):
+            result = self.nets[0].process(input[i])
+            error += cost(result, expected_result[i])
+
+        if (was_learning == True):
+            self.nets[0].start_learning()
+
+        return error
 
     def print_assesments(self, expected=[]):
         if expected == []:
@@ -270,3 +367,8 @@ class geneticNetwork(network):
         else:
             for net in self.nets:
                 print(net.asses(expected))
+
+
+    def __str__(self):
+
+        return self.nets[0].__str__()
