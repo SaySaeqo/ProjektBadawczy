@@ -1,10 +1,21 @@
-import copy
+from functools import reduce
 
+from Constants import *
 from utils import sigmoid
-from Network import Network
+from utils import sigmoid_der
+from Network import Network, Neuron
+import numpy as np
 
 
 def derivative(func, args, n):
+    """
+    Simple derivative by definition
+
+    :param func: function which take args as arguments
+    :param args: list of numbers
+    :param n: index of argument from args derivatise is about
+    :return: number
+    """
     h = 0.000001
     new_args = args.copy()
     new_args[n] += h
@@ -12,99 +23,100 @@ def derivative(func, args, n):
 
 
 def gradient(func, args_values):
-    result = [];
+    """
+    Simple gradient for traditional multiarguments functions
+
+    :param func: function which take args_values as arguments
+    :param args_values: list of numbers
+    :return: vector of derivatives (numbers)
+    """
+    result = []
     for i in range(len(args_values)):
         result.append(derivative(func, args_values, i))
     return result
 
 
-def sigmoid_derivative(x):
-    return sigmoid(x) * (1 - sigmoid(x))
-
-
-def calc_z_L(layer_index, neuron_index, net: Network):
-    """funkcja pomocnicza wyliczająca z_L, czyli argument funkcji sigmoid, wynikający z
-    sumy aktywacji poprzednich neuronów, przemnożonych przez odpowiednie wagi"""
-    z_L = 0
-
-    for i in range(net.nrn_nmb[layer_index - 1]):
-        z_L += net.weights[layer_index][neuron_index][i] * net.neuron_values[layer_index - 1][i]
-    z_L += net.biases[layer_index][neuron_index]
-
-    return z_L
-
-
-def cost(result, expected):
-    """w sumie nie używane XD, ale do genetycznego może się przydać"""
-    sum = 0
-    for i in range(len(result)):
-        sum += (result[i] - expected[i]) ** 2
-    return sum
-
-
-def net_derivative(layer_index, neruon_index, net: Network, expected_result, weight_index=0, modify_weight=False,
-                   modify_bias=False, calc_neuron=False):
+def cost_func(output, expected_output):
     """
-    funkcja licząca pochodną po wybranym elemencie:
-    -wadze
-    -biasie
-    -wartości aktywacji nueuronu
+    Square cost function for net gradient function
+
+    :param output: list of net's outputs
+    :param expected_output: list of target outputs
+    :return: number
     """
-    # liczenie pochodnej po wadze
-    if modify_weight:
-        # z_L=w_L * a _(L-1) + b_L
-        z_L = calc_z_L(layer_index, neruon_index, net)
-
-        # grad= a_(L-1) * sigmoid' (z_L)
-        grad = net.neuron_values[layer_index - 1][weight_index] * sigmoid_derivative(z_L)
-
-        # grad *= dC/da_(L)
-        grad *= net_derivative(layer_index, neruon_index, net, expected_result, calc_neuron=True)
-
-    # po biasie
-    elif modify_bias:
-        # liczenie z_L jak wyżej
-        z_L = calc_z_L(layer_index, neruon_index, net)
-        grad = sigmoid_derivative(z_L) * net_derivative(layer_index, neruon_index, net, expected_result,
-                                                        calc_neuron=True)
-
-    # a tu po wartości aktywacji neuronu
-    elif calc_neuron:
-        if layer_index == net.layers - 1:
-            # to prosta pochodna po Co
-            grad = 2 * (net.neuron_values[layer_index][neruon_index] - expected_result[neruon_index])
-        else:
-            # rekurencja
-            grad = 0
-            for i in range(net.nrn_nmb[layer_index + 1]):
-                # z_(L+1) tutaj to jest tak właściwie, ale nie da się plusa napisać w nazwie zmiennej
-                z_L = calc_z_L(layer_index + 1, i, net)
-                # suma : w_jk^(L+1) + sigmoid'(z_j^(L+1) * dc/daj^(L+1)
-                grad += net.weights[layer_index + 1][i][neruon_index] * sigmoid_derivative(z_L) \
-                        * net_derivative(layer_index + 1, i, net, expected_result, calc_neuron=True)
-
-    return grad
+    return sum(((a - b) ** 2 for a, b in zip(output, expected_output)))
 
 
-def net_gradient(neuron_values, expected_result, net: Network):
+def cost_func_der(neuron_output, neuron_expected_output):
     """
-    :param neuron_values: tablica wektorów. w każdym wektorze są wartości
-    aktywacji poszczególnych neuronów
-    :param layers:
-    :param matrices:
-    :param biases:
-    :return:
-    """
-    matrices_der = copy.deepcopy(net.weights)
-    biases_der = copy.deepcopy(net.biases)
+    Derivative of square cost function for net gradient function
 
-    # dla kazdej warstwy
-    for i in range(1, net.layers):
-        # dla każdego neuronu z tej warstwy
-        for j in range(net.nrn_nmb[i]):
-            # policz wagi od neuronów z lewej warstwy
-            for k in range(net.nrn_nmb[i - 1]):
-                matrices_der[i][j][k] = net_derivative(i, j, net, expected_result, weight_index=k, modify_weight=True)
-            # policz bias dla neuronu
-            biases_der[i][j] = net_derivative(i, j, net, expected_result, modify_bias=True)
-    return matrices_der, biases_der
+    :param neuron_output: single neuron output
+    :param neuron_expected_output: single target output
+    :return: number
+    """
+    return 2 * (neuron_output - neuron_expected_output)
+
+
+def net_gradient(net: Network, inputs, expected_outputs):
+    """
+    Correct function for neural network. Uses gradient mechanics to upgrade network weights and biases.
+
+    :param net: Network
+    :param inputs: list of network's inputs
+        (when single input for network is a list, then it is list of lists)
+    :param expected_outputs: list of expected outputs for each network's inputs in previous argument
+    :return: void
+    """
+    # cost need to be minimal
+
+    for _ in range(MAX_ITERATIONS):
+        derivatives_nets = []
+        for input, ex_output in zip(inputs, expected_outputs):
+
+            # computate values for each neuron
+            net.process(input)
+
+            # computate derivatives
+            ders_net = Network.create_empty(net.model_shape)
+            # C/dvalue from net output
+            net_output = (neuron.value for neuron in net.layers[-1])
+            dvalues = (cost_func_der(cur, ex) for cur, ex in zip(net_output, ex_output))
+            for i in reversed(range(1, len(net.model_shape))):
+
+                # new C/dvalue for each layer (array of C/dvalue for each neuron)
+                new_dvalues = [0] * net.model_shape[i - 1]
+
+                for neuron, dvalue in zip(net.layers[i], dvalues):
+
+                    # tmp = C/dvalue * dvalue/dz
+                    tmp = dvalue * sigmoid_der(neuron.z)
+
+                    # add to structure for derivatives
+                    derivative_neuron = Neuron()
+                    derivative_neuron.bias = 1 * tmp
+                    derivative_neuron.weights = [prev.value * tmp for prev in net.layers[i - 1]]
+                    ders_net.layers[i] += [derivative_neuron]
+
+                    # sum for new C/dvalue from next layer's neurons and previous C/dvalue
+                    sums_addons = [weight * tmp for weight in neuron.weights]
+                    new_dvalues = \
+                        [base + a for base, a in zip(new_dvalues, sums_addons)]
+
+                # switch to new C/dvalue
+                dvalues = new_dvalues
+
+            # add computed derivatives to array for future average computations
+            derivatives_nets += [ders_net]
+
+        # improving net by average derivative from all inputs
+        def average(networks_array):
+            sum = networks_array[0]
+            first = True
+            for network in networks_array:
+                if first:
+                    first = False
+                    continue
+                sum += network
+            return sum / len(networks_array)
+        net += average(derivatives_nets)

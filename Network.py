@@ -1,112 +1,197 @@
-import numpy as nmp
+import numpy as np
 from Constants import *
-
 from utils import sigmoid
 
 
 class Neuron:
-    def __init__(self, type, ascendants_number=0):
-        self.type = type
-        self.value = None
-        if type != INPUT:
-            self.bias = nmp.random.rand()
-            self.ascendants_weights = nmp.random.rand(ascendants_number)
-        else:
-            self.bias = None
-            self.ascendants_weights = None
+    """
+    ===========
+        Attributes
+    ===========
+    bias : float
 
-    def __str__(self):
-        return f"Neuron({self.type}, {len(self.ascendants_weights)})"
+    weights : list
+        weights representing edges from predecessors in net
+    value : float
+        computed when net process inputs, equals sigmoid(z)
+    z : float
+        helper for correct function, equals weights*predecessors_values + bias
+
+    ==========
+        Methods
+    ==========
+    operators (affects only weights and bias)
+        *   \+ Neuron
+        *   += Neuron
+        *   \- Neuron
+        *   -= Neuorn
+        *   / number
+        *   /= number
+    """
+
+    def __init__(self, amount_of_predecessors=0):
+        self.weights = np.random.rand(amount_of_predecessors)  # weights from predecessors
+        self.bias = np.random.rand()
+        self.value = 0  # computed on network process
+        self.z = 0  # value before calling sigmoid on calcs with weights and bias
 
     def __repr__(self):
-        return f"Bias:{self.bias} A_Weights:{self.ascendants_weights}"
+        return self.__str__()
+
+    def __str__(self):
+        """
+        Bias:Weights
+
+        :return: string like above
+        """
+        return f"{self.bias}:{self.weights}"
+
+    def __add__(self, other):
+        result = Neuron()
+        result.weights = np.add(self.weights, other.weights)
+        result.bias = self.bias + other.bias
+        return result
+
+    def __iadd__(self, other):
+        self.weights = np.add(self.weights, other.weights)
+        self.bias += other.bias
+        return self
+
+    def __sub__(self, other):
+        result = Neuron()
+        result.weights = np.subtract(self.weights, other.weights)
+        result.bias = self.bias - other.bias
+        return result
+
+    def __isub__(self, other):
+        self.weights = np.subtract(self.weights, other.weights)
+        self.bias -= other.bias
+        return self
+
+    def __truediv__(self, other):
+        result = Neuron()
+        result.weights = np.divide(self.weights, other)
+        result.bias = self.bias / other
+        return result
+
+    def __itruediv__(self, other):
+        self.weights = np.divide(self.weights, other)
+        self.bias /= other
+        return self
 
 
 class Network:
     """
-    matrices-macierze wag. wagi itej warstwy są na itej pozycji (pierwsza element tej tablicy to None, bo zerowa
-    warstwa nie ma wag)
-    biases = wektory biasów analogicznie jak macierze wag
-    arguments
-    function
-    correct_function
+    ===========
+        Attributes
+    ===========
+    layers : list of layers in network
+        Each layer contains list of neurons in number described in model_shape.
+
+    ===========
+        Methods
+    ===========
+    process(args)
+        compute values from input
+    Network.create_empty()
+        create Network with empty layers (without neurons, layers with len of 0)
+
+    operators (affects each neuron)
+        * \+ Network
+        * += Network
+        * / number
     """
 
-    def __init__(self, nrn_nmb, correct_function):
+    def __init__(self, model_shape):
         """
-        :param nrn_nmb: neurons number per layer, czytając od lewej
-        :param correct_function: funkcja ucząca/poprawiająca sieć
+        :param model_shape: array of layers' sizes, where size of array is number of layers,
+            like [3, 5, 3] that means 3 layers, 1st has 3 neurons, 2nd - 5 neurons and 3rd - 3 neurons
+        :param correct_function: function used to improve network
         """
 
-        self.neurons = [[[Neuron(INPUT)] * nrn_nmb[0]]]
-        for i in range(1, len(nrn_nmb)):
-            self.neurons += [[Neuron(OUTPUT, nrn_nmb[i - 1])] * nrn_nmb[i]]
+        self.model_shape = model_shape
+        model_shape_shifted = ([0] + model_shape)[:-1]
+        self.layers = [[Neuron(bef) for _ in range(cur)]
+                       for bef, cur in zip(model_shape_shifted, model_shape)]
 
-        self.correct_function = correct_function
+    def __call__(self, *args, **kwargs):
+        return self.process(*args)
 
     def process(self, args):
         """
-        liczy wartości aktywacji WSZYSTKICH neuronów, zwraca tylko ostatnią warstwę
-        ale wszystkie wartości są przechowywane wewnątrz obiektu w polu neuron_values!
-        :param args:
-        :return:
-        """
-        for i in range(len(args)):
-            self.neurons[0][i].value = args[i]
+        Activate network to compute results from args.
+        All activation values from all neurons all stored in values parameter.
 
-        for layer_idx in range(1, len(self.neurons)):
-            prev_values = [neuron.values for neuron in self.neurons[layer_idx-1]]
-            for neuron in self.neurons[layer_idx]:
-                neuron.value = nmp.matmul(neuron.ascendants_weights, prev_values)
-                neuron.value += neuron.bias
-
-        return [neuron.values for neuron in self.neurons[-1]]
-
-    def correct(self, expected_result):
-        """
-        Funkcja zmieniająca wartości wag i biasów, w zależności od funkcji correct zdefiniowanej
-        w konstruktorze. Funkcja correct, musi być poprzedzona wywołaniem process
-        :param expected_result: tablica wartości neuronów ostatniej warstwy
-        :return: 2 obiekty: gradient wag, gradient biasów
+        :param args: collection of arguments in number of 1st layer size
+        :return: collection of results in number of last layer size
         """
 
-        matrices_der, biases_der = self.correct_function(self.neuron_values, expected_result, self)
-        # ulepsz każdą warstwę
-        for i in range(1, self.layers):
-            self.weights[i] = nmp.subtract(self.weights[i], matrices_der[i])
-            self.biases[i] = nmp.subtract(self.biases[i], biases_der[i])
-        return matrices_der, biases_der
+        # turn on the net
+        first = True
+        values = args
+        for layer in self.layers:
+            if first:
+
+                # load first layer
+                for neuron, arg in zip(layer, args):
+                    neuron.value = arg
+
+                first = False
+                continue
+
+            # activate neurons
+            for neuron in layer:
+                neuron.z = sum(w * v for w, v in zip(neuron.weights, values))
+                neuron.z += neuron.bias
+                neuron.value = sigmoid(neuron.z)
+
+            values = (neuron.value for neuron in layer)
+
+        return list(values)
+
+    def __repr__(self):
+        return self.__str__()
 
     def __str__(self):
-        """ahh"""
+        """
+        -------LAYER 1-------
+        | N1 | N2 | N3 |...       Layer1
+        -------LAYER 2-------
+        ...                       Layer2
+        -------LAYER ...-------
+        ...                        ...
+        ---------END---------
+
+        :return: string like above
+        """
         text = ""
-        # wypisz każdą macierz
-        for i in range(self.layers):
-            # OZDOBA górna krawedź/
-            text += ' '
-            for j in range(len(self.weights[i][0])):
-                text += ' ----'
-            # OZDOBA górna krawedź\
-
-            # każdy wiersz
-            text += '\n'
-            for j in range(self.nrn_nmb[i]):
-                text += '| '
-                # wypisz kolumne
-                for k in range(len(self.weights[i][j])):
-                    if self.weights[i][j][k] != 'x':
-                        text += f"{self.weights[i][j][k]:.1f} ".rjust(5)
-                    else:
-                        text += f"  {self.weights[i][j][k]}  "
-
-                text += '|\n'
-
-            # OZDOBA dolna krawedź/
-            text += ' '
-            for k in range(len(self.weights[i][j])):
-                text += ' ----'
-            text += '\n'
-            # OZDOBA dolna krawedź\
-
-            text += '\n'
+        for i in range(len(self.layers)):
+            text += f"-------LAYER {i}-------\n"
+            text += "| "
+            for neuron in self.layers[i]:
+                text += f"{neuron} | "
+            text += "\n"
+        text += "---------END---------"
         return text
+
+    @classmethod
+    def create_empty(cls, model_shape):
+        return cls([0 for layer in model_shape])
+
+    def __add__(self, other):
+        result = Network.create_empty(self.model_shape)
+        for result_layer, layer1, layer2 in zip(result.layers, self.layers, other.layers):
+            result_layer += [neuron1 + neuron2 for neuron1, neuron2 in zip(layer1, layer2)]
+        return result
+
+    def __iadd__(self, other):
+        for layer1, layer2 in zip(self.layers, other.layers):
+            for neuron1, neuron2 in zip(layer1, layer2):
+                neuron1 += neuron2
+        return self
+
+    def __truediv__(self, other):
+        result = Network.create_empty(self.model_shape)
+        for result_layer, layer1 in zip(result.layers, self.layers):
+            result_layer += [neuron / other for neuron in layer1]
+        return result

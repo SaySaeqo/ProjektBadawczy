@@ -26,6 +26,14 @@ def sigmoid(x):
     """
     return 1 / (1 + nmp.exp(-x))
 
+def sigmoid_der(x):
+    """
+    Derivative of sigmoid
+    :param x:  number
+    :return:  number beetwen 0 and 1
+    """
+    return sigmoid(x) * (1 - sigmoid(x))
+
 
 class Function:
     def __init__(self, func, domain, min_max=MIN, solutions=None):

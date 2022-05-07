@@ -94,21 +94,15 @@ def test_gradient_learnrate():
 
 def test_neuron():
     N = 1000
-    nrn_nmb = [3, 5, 5, 4]
-    net = Network(nrn_nmb, net_gradient)
+    model = [3, 5, 5, 4]
+    net = Network(model)
 
-    # print (net)
-    for i in range(N):
-        net.process([0, 0, 0])
-        net.correct([1, 1, 1, 1])
-        net.process([0, 1, 0])
-        net.correct([1, 0, 1, 1])
-        net.process([0, 1, 1])
-        net.correct([1, 1, 0, 0])
-        net.process([1, 1, 1])
-        net.correct([0, 0, 0, 0])
-        print(f"\r{i}/{N}", end="")
-    # print(net)
+    print (net)
+    inputs = [[0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]]
+    targets = [[1, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 0], [0, 0, 0, 0]]
+    net_gradient(net,inputs,targets)
+    #print(f"\r{i}/{N}", end="")
+    print("PO TRENINGU\n",net)
     #                          oczekiwane wyniki:
     print(net.process([0, 0, 0]))  # 1 1 1 1
     print(net.process([0, 1, 0]))  # 1 0 1 1

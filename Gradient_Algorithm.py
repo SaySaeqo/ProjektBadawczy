@@ -51,14 +51,14 @@ def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
 # a parametry learn_rate i tol niech będą na końcu (żeby nie trzeba było uwzględniać innych wejść
 # wtedy ładnie będzie można także testować tę funkcję
 def gradient_func(function, start, min_max=Constants.MIN, \
-                  learn_rate=0.001, max_iter=1_000, tol=0.0001):
+                  learn_rate=0.1, max_iter=1_000, tol=0.0001):
     for i in range(max_iter):
-        diff = gradient(function, start)
-        diff = list(map(lambda a: a * learn_rate, diff))
-        if all(map(lambda a: abs(a) < tol, diff)):
+        diffs = gradient(function, start)
+        diffs = [d if d < learn_rate else learn_rate for d in diffs]
+        if all((abs(d) < tol for d in diffs)):
             break
         for i in range(len(start)):
-            start[i] += (min_max == Constants.MAX) * diff[i]
-            start[i] -= (min_max == Constants.MIN) * diff[i]
+            start[i] += (min_max == Constants.MAX) * diffs[i]
+            start[i] -= (min_max == Constants.MIN) * diffs[i]
 
     return start
