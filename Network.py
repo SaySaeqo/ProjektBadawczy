@@ -263,6 +263,7 @@ class geneticNetwork(network):
         for i in range(math.floor(self.net_numb / 2)):
             parents = random.sample(nets, 2)
 
+
             nets.remove(parents[0])
             nets.remove(parents[1])
 
@@ -281,15 +282,15 @@ class geneticNetwork(network):
                 for row in range(len(net.matrices[layer])):
                     # modyfikacja wag
                     for col in range(len(net.matrices[layer][row])):
-                        if random.randint(0, 100) > 75:
-                            delta = 1
+                        if random.randint(0, 100) > 85:
+                            delta = 0.1
                             if random.randint(0, 1) == 1:
                                 net.matrices[layer][row][col] += delta
                             else:
                                 net.matrices[layer][row][col] -= delta
                     # mutacja biasów
-                    if random.randint(0, 100) > 75:
-                        delta = 1
+                    if random.randint(0, 100) > 85:
+                        delta = 0.1
                         if random.randint(0, 1) == 1:
                             net.biases[layer][row] += delta
                         else:
@@ -335,8 +336,8 @@ class geneticNetwork(network):
 
         # i teraz genetyka
         crossed = self.cross_nets()
-        for net in crossed:
-            net.process(self.args)
+        #for net in crossed:
+        #    net.process(self.args)
 
         self.mutate_nets(crossed)
         all = crossed + prev_best

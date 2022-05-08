@@ -450,9 +450,8 @@ def PlotBeans(option):
 
     if option == "beans_single_try":
         batch_size=100
-        LOOPS=12
+        LOOPS=24
         domain = range(0,ROWS*LOOPS,batch_size)
-
         net = geneticNetwork([16, 8, 8, 7], 50,batch_size)
         net_normal = network([16, 8, 8, 7], net_gradient,batch_size)
         #error_genetic = [0]*ROWS
@@ -474,7 +473,8 @@ def PlotBeans(option):
         net_normal.stop_learning()
         net.stop_learning()
 
-
+        print("domain len",len(domain))
+        print("error len",len(error_normal))
         plot1 = plt.subplot2grid((2,1), (0, 0))
         plot1.plot(domain, error_normal, label="price")
         plot1.set_xlabel("iteration")
