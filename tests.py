@@ -95,7 +95,7 @@ def test_gradient_learnrate():
 
 def test_neuron():
     model = [3,5,5, 4]
-    net = Network(model)
+    net = Network(model, correct_func=net_gradient)
 
     print (net)
     inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]

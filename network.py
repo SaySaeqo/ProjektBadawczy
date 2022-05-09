@@ -27,11 +27,12 @@ class Network:
         * / number
     """
 
-    def __init__(self, model_shape, empty = False):
+    def __init__(self, model_shape, correct_func=None, empty=False):
         """
         :param model_shape: array of layers' sizes, where size of array is number of layers,
             like [3, 5, 3] that means 3 layers, 1st has 3 neurons, 2nd - 5 neurons and 3rd - 3 neurons
         """
+        self.correct_func = correct_func
         self.model_shape = model_shape
         model_shape_shifted = ([0] + model_shape)[:-1]
         self.nb_layers = len(model_shape)
@@ -39,14 +40,14 @@ class Network:
         if empty:
             weights = [np.zeros((nb_neur_prev, nb_neur_cur))
                        for nb_neur_prev, nb_neur_cur in zip(model_shape_shifted, model_shape)]
-            biases = [np.zeros((nb_neur,1)) for nb_neur in model_shape]
+            biases = [np.zeros((nb_neur, 1)) for nb_neur in model_shape]
         else:
             weights = [np.random.rand(nb_neur_prev, nb_neur_cur)
                        for nb_neur_prev, nb_neur_cur in zip(model_shape_shifted, model_shape)]
-            biases = [np.random.rand(nb_neur,1) for nb_neur in model_shape]
+            biases = [np.random.rand(nb_neur, 1) for nb_neur in model_shape]
 
-        values = [np.zeros((1,nb_neur)) for nb_neur in model_shape]
-        zs = [np.zeros((nb_neur,1)) for nb_neur in model_shape]
+        values = [np.zeros((1, nb_neur)) for nb_neur in model_shape]
+        zs = [np.zeros((nb_neur, 1)) for nb_neur in model_shape]
         self.layers = zip(weights, biases, values, zs)
         self.layers = [list(layer) for layer in self.layers]
 
@@ -77,56 +78,8 @@ class Network:
 
         return v_prev
 
-
     def correct(self, inputs, expected_outputs):
-        """
-        Correct function for neural network. Uses gradient mechanics to upgrade network weights and biases.
-
-        :param inputs: list of network's inputs
-            (when single input for network is a list, then it is list of lists)
-        :param expected_outputs: list of expected outputs for each network's inputs in previous argument
-        :return: 1D list with cost functions values over iterations for all inputs
-        """
-        # cost need to be minimal
-        steps = []  # cost function values over iterations
-        for iter in range(MAX_ITERATIONS):
-            derivatives_nets = []
-            for input, ex_output in zip(inputs, expected_outputs):
-                # computate derivatives
-                ders_net = Network.create_empty(self.model_shape)
-                # computate values for each neuron
-                net_output = self.process(input)
-                # calculate cost_function for statistics
-                steps += [np.sum(np.float_power(net_output - ex_output,2))]
-                # C/dvalue from net output
-                ex_output = np.matrix(ex_output)
-                d_cost_d_a = 2 * (net_output - ex_output)
-                for i in reversed(range(1, self.nb_layers)):
-                    w, b, _, z = self.layers[i]
-                    _, _, v, _ = self.layers[i - 1]
-
-                    d_cost_d_z = np.multiply(np.transpose(d_cost_d_a), sigmoid_der(z))
-                    d_cost_d_b = d_cost_d_z
-                    d_cost_d_w = np.transpose(v) @ np.transpose(d_cost_d_z)
-                    d_cost_d_a = np.transpose(w @ d_cost_d_z)
-
-                    ders_net.layers[i][0] = d_cost_d_w
-                    ders_net.layers[i][1] = d_cost_d_b
-
-                # add computed derivatives to array for future average computations
-                derivatives_nets += [ders_net]
-
-            # improving net by average derivative from all inputs
-            def average(networks_array):
-                my_sum = Network.create_empty(networks_array[0].model_shape)
-                for network in networks_array:
-                    my_sum += network
-                return my_sum / len(networks_array)
-
-            me = self
-            me -= average(derivatives_nets)
-
-        return steps
+        return self.correct_func(self, inputs, expected_outputs)
 
     def __repr__(self):
         return self.__str__()
@@ -147,7 +100,7 @@ class Network:
 
     @classmethod
     def create_empty(cls, model_shape):
-        return cls(model_shape,empty=True)
+        return cls(model_shape, empty=True)
 
     def __iadd__(self, other):
         for layer1, layer2 in zip(self.layers, other.layers):
