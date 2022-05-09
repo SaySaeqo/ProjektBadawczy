@@ -97,7 +97,7 @@ class Network:
                 # computate values for each neuron
                 net_output = self.process(input)
                 # calculate cost_function for statistics
-                steps += [np.sum(net_output - ex_output)]
+                steps += [np.sum(np.float_power(net_output - ex_output,2))]
                 # C/dvalue from net output
                 ex_output = np.matrix(ex_output)
                 d_cost_d_a = 2 * (net_output - ex_output)

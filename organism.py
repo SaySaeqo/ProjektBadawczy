@@ -6,7 +6,7 @@
 import random
 from constants import *
 
-class organism(object):		
+class Organism(object):
 	
 	def __init__(self,arg_num):		
 		data=[None]*arg_num
@@ -16,7 +16,7 @@ class organism(object):
 def create_population(arg_num,domain_list,probe_num):
 	org=[]
 	for i in range(probe_num):		
-		new_organism=organism(arg_num)
+		new_organism=Organism(arg_num)
 		temp_list=[None]*arg_num
 		#generowanie losowych wartości początkowych
 		for j in range(arg_num):

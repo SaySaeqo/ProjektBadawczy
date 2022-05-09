@@ -7,8 +7,8 @@ import torch.optim as optim
 from matplotlib import pyplot as plt
 
 from utils import Function
-from Genetic_Algorithms import *
-from Gradient_Algorithm import *
+from genetic import *
+from gradient import *
 from network import Network
 
 
