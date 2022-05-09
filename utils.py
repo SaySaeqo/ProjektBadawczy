@@ -1,9 +1,9 @@
 import random
 
-import numpy as nmp
+import numpy as np
 
 import testfunctions as tf
-from Constants import *
+from constants import *
 
 
 def random_data(domain_list):
@@ -24,7 +24,8 @@ def sigmoid(x):
     :param x: real number
     :return: number beetwen 0 and 1
     """
-    return 1 / (1 + nmp.exp(-x))
+    return 1 / (1 + np.exp(-x))
+
 
 def sigmoid_der(x):
     """
@@ -32,7 +33,38 @@ def sigmoid_der(x):
     :param x:  number
     :return:  number beetwen 0 and 1
     """
+    if isinstance(x,np.matrix):
+        return np.multiply(sigmoid(x), (1 - sigmoid(x)))
     return sigmoid(x) * (1 - sigmoid(x))
+
+
+def derivative(func, args, n):
+    """
+    Simple derivative by definition
+
+    :param func: function which take args as arguments
+    :param args: list of numbers
+    :param n: index of argument from args derivatise is about
+    :return: number
+    """
+    h = 0.000001
+    new_args = args.copy()
+    new_args[n] += h
+    return (func(new_args) - func(args)) / h
+
+
+def gradient(func, args_values):
+    """
+    Simple gradient for traditional multiarguments functions
+
+    :param func: function which take args_values as arguments
+    :param args_values: list of numbers
+    :return: vector of derivatives (numbers)
+    """
+    result = []
+    for i in range(len(args_values)):
+        result.append(derivative(func, args_values, i))
+    return result
 
 
 class Function:

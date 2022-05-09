@@ -4,11 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from matplotlib import pyplot as plt
 
 from utils import Function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
-from Network import Network
+from network import Network
 
 
 def get_algorithm(index):
@@ -93,21 +94,36 @@ def test_gradient_learnrate():
 
 
 def test_neuron():
-    N = 1000
-    model = [3, 5, 5, 4]
+    model = [3,5,5, 4]
     net = Network(model)
 
     print (net)
-    inputs = [[0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]]
-    targets = [[1, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 0], [0, 0, 0, 0]]
-    net_gradient(net,inputs,targets)
+    inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
+    targets = [[1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
+    steps = net.correct(inputs, targets)
     #print(f"\r{i}/{N}", end="")
-    print("PO TRENINGU\n",net)
+    print("----------\nPO TRENINGU\n----------")
+    print(net)
     #                          oczekiwane wyniki:
-    print(net.process([0, 0, 0]))  # 1 1 1 1
-    print(net.process([0, 1, 0]))  # 1 0 1 1
-    print(net.process([0, 1, 1]))  # 1 1 0 0
-    print(net.process([1, 1, 1]))  # 0 0 0 0
+    print(net.process([0.0, 0.0, 0.0]))  # 1 1 1 1
+    print(net.process([0.0, 1.0, 0.0]))  # 1 0 1 1
+    print(net.process([0.0, 1.0, 1.0]))  # 1 1 0 0
+    print(net.process([1.0, 1.0, 1.0]))  # 0 0 0 0
+    print("1 1 1 1")
+    print("1 0 1 1")
+    print("1 1 0 0")
+    print("0 0 0 0")
+
+    plt.figure()
+    plt.plot(steps[0:-4:4])
+    plt.plot(steps[1:-3:4])
+    plt.plot(steps[2:-2:4])
+    plt.plot(steps[3:-1:4])
+    plt.legend(["000->1111", "010->1011", "011->1100", "111->0000"])
+    plt.xlabel("iterations")
+    plt.ylabel("cost")
+    plt.grid(linestyle='--')
+    plt.show()
 
 
 def test_neuron_libs(lib="neurolab"):

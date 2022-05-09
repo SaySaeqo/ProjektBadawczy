@@ -2,8 +2,8 @@ import math
 import random
 
 from utils import random_data
-from Gradient import gradient
-from Constants import *
+from utils import gradient
+from constants import *
 
 
 def mutate_new_random(generation, domain_list, arg_num):

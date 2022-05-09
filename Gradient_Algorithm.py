@@ -1,15 +1,16 @@
 import copy
 
-from Gradient import *
 import random
 from Organism import *
 import numpy
 import math
-import Constants
+from constants import *
 
 
 # dodać organizmy i będzie wprosty sposób done
 # Może dodać dokładność rozwiązania jako dodatkowy argument
+from utils import gradient
+
 
 def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
     """
@@ -50,7 +51,7 @@ def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
 
 # a parametry learn_rate i tol niech będą na końcu (żeby nie trzeba było uwzględniać innych wejść
 # wtedy ładnie będzie można także testować tę funkcję
-def gradient_func(function, start, min_max=Constants.MIN, \
+def gradient_func(function, start, min_max=MIN,
                   learn_rate=0.1, max_iter=1_000, tol=0.0001):
     for i in range(max_iter):
         diffs = gradient(function, start)
@@ -58,7 +59,7 @@ def gradient_func(function, start, min_max=Constants.MIN, \
         if all((abs(d) < tol for d in diffs)):
             break
         for i in range(len(start)):
-            start[i] += (min_max == Constants.MAX) * diffs[i]
-            start[i] -= (min_max == Constants.MIN) * diffs[i]
+            start[i] += (min_max == MAX) * diffs[i]
+            start[i] -= (min_max == MIN) * diffs[i]
 
     return start

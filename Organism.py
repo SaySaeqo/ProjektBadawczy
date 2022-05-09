@@ -4,7 +4,7 @@
 #typu czas życia. Widziałem jakieś takie rozwiązania
 
 import random
-from Constants import *
+from constants import *
 
 class organism(object):		
 	
