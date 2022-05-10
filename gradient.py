@@ -1,6 +1,6 @@
 import numpy as np
 
-from network import Network
+from network import Network, average
 from organism import *
 import numpy
 from constants import *
@@ -63,6 +63,35 @@ def gradient_func(function, start, min_max=MIN,
 
     return start
 
+def computate_derivatives(net, input, ex_output):
+    """
+    Computates derivatives for single pair of output and expected output of net
+
+    :param net: Network to calculate derivatives for
+    :param input: single input for net, list of arguments
+    :param ex_output: single expected_output, list of arguments
+    :return: derivatives packed into Network object
+    """
+    # var to hold results to return
+    ders_net = Network.create_empty(net.model_shape)
+    # computate values for each neuron
+    net_output = net.process(input)
+    # d_cost/d_value from net output
+    ex_output = np.matrix(ex_output)
+    d_cost_d_a = 2 * (net_output - ex_output)
+    for i in reversed(range(1, net.nb_layers)):
+        w, b, _, z = net.layers[i]
+        _, _, v, _ = net.layers[i - 1]
+
+        d_cost_d_z = np.multiply(np.transpose(d_cost_d_a), sigmoid_der(z))
+        d_cost_d_b = d_cost_d_z
+        d_cost_d_w = np.transpose(v) @ np.transpose(d_cost_d_z)
+        d_cost_d_a = np.transpose(w @ d_cost_d_z)
+
+        ders_net.layers[i][0] = d_cost_d_w
+        ders_net.layers[i][1] = d_cost_d_b
+
+    return ders_net
 
 def net_gradient(net, inputs, expected_outputs):
     """
@@ -71,44 +100,33 @@ def net_gradient(net, inputs, expected_outputs):
     :param inputs: list of network's inputs
         (when single input for network is a list, then it is list of lists)
     :param expected_outputs: list of expected outputs for each network's inputs in previous argument
-    :return: 1D list with cost functions values over iterations for all inputs
+    :return: void
     """
+
     # cost need to be minimal
     steps = []  # cost function values over iterations
+
+    BATCH_SIZE = min(10, len(inputs))
+
     for iter in range(MAX_ITERATIONS):
-        derivatives_nets = []
+        ders_buffer = []
+        batch_count=0
         for input, ex_output in zip(inputs, expected_outputs):
-            # computate derivatives
-            ders_net = Network.create_empty(net.model_shape)
-            # computate values for each neuron
-            net_output = net.process(input)
-            # calculate cost_function for statistics
-            steps += [np.sum(np.float_power(net_output - ex_output, 2))]
-            # C/dvalue from net output
-            ex_output = np.matrix(ex_output)
-            d_cost_d_a = 2 * (net_output - ex_output)
-            for i in reversed(range(1, net.nb_layers)):
-                w, b, _, z = net.layers[i]
-                _, _, v, _ = net.layers[i - 1]
+            # cost = np.sum(np.float_power(net(input) - ex_output, 2))
+            # steps += [cost]
 
-                d_cost_d_z = np.multiply(np.transpose(d_cost_d_a), sigmoid_der(z))
-                d_cost_d_b = d_cost_d_z
-                d_cost_d_w = np.transpose(v) @ np.transpose(d_cost_d_z)
-                d_cost_d_a = np.transpose(w @ d_cost_d_z)
+            # ders is Network object which contains derivatives for weights and biases
+            ders = computate_derivatives(net,input,ex_output)
+            ders_buffer += [ders]
 
-                ders_net.layers[i][0] = d_cost_d_w
-                ders_net.layers[i][1] = d_cost_d_b
+            # batching
+            batch_count += 1
+            if batch_count >= BATCH_SIZE:
+                batch_count = 0
+                net -= average(ders_buffer)
+                ders_buffer.clear()
 
-            # add computed derivatives to array for future average computations
-            derivatives_nets += [ders_net]
+        if len(ders_buffer) > 0:
+            net -= average(ders_buffer)
 
-        # improving net by average derivative from all inputs
-        def average(networks_array):
-            my_sum = Network.create_empty(networks_array[0].model_shape)
-            for network in networks_array:
-                my_sum += network
-            return my_sum / len(networks_array)
-
-        net -= average(derivatives_nets)
-
-    return steps
+    # return steps

@@ -3,6 +3,18 @@ from constants import *
 from utils import sigmoid, sigmoid_der
 
 
+def average(networks_array):
+    """
+    Computates average of the Networks' array
+
+    :param networks_array: list of Network objects
+    :return: Network which store average by weights and biases from Networks' array
+    """
+    my_sum = Network.create_empty(networks_array[0].model_shape)
+    for network in networks_array:
+        my_sum += network
+    return my_sum / len(networks_array)
+
 class Network:
     """
     ===========
