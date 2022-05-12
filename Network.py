@@ -215,8 +215,9 @@ class geneticNetwork(network):
         self.args = []
         self.nrn_nmb = nrn_nmb
         self.expected_result = []
-        self.last_args = [0]*nrn_nmb[0]
-        self.last_expected = [0]*(nrn_nmb[-1])
+        self.last_args = []
+        self.last_expected = []
+        self.batch_size=batch_size
 
         for i in range(net_numb):
             self.nets[i] = network(nrn_nmb, None, batch_size)
@@ -305,13 +306,17 @@ class geneticNetwork(network):
         # assesments=self.asses_nets()
 
         #wpierw ocena nowego wejścia
-        nets = [(net, net.asses(self.expected_result)) for net in nets]
+        #nets_assesments = [(net, net.asses(self.expected_result)) for net in nets]
+        nets_assesments = [None]*len(nets)
         #potem dodajemy stare wejscie
-        for net in nets:
-            net[0].process(self.last_args)
-        nets = [(net[0], (net[1] + net[0].asses(self.last_expected))/2) for net in nets]
+        for j in range(len(nets)):
+            sum=0
+            for i in range(min(len(self.last_args),self.batch_size)):
+                nets[j].process(self.last_args[i])
+                sum+=nets[j].asses(self.last_expected[i])
+            nets_assesments[j] = (nets[j],sum)
         # sorted_nets = sorted(nets, key=lambda x: x.asses(self.expected_result), reverse=False)
-        sorted_nets = sorted(nets, key=lambda x: x[1], reverse=False)
+        sorted_nets = sorted(nets_assesments, key=lambda x: x[1], reverse=False)
         sorted_nets = [net[0] for net in sorted_nets]
         return sorted_nets
 
@@ -343,8 +348,11 @@ class geneticNetwork(network):
         all = crossed + prev_best
         self.nets = self.select_best(all)
 
-        self.last_expected = expected_result
-        self.last_args = self.args
+        self.last_expected.append(expected_result)
+        self.last_expected=self.last_expected[:self.batch_size]
+        self.last_args.append(self.args)
+        self.last_args = self.last_args[:self.batch_size]
+
 
     def total_error(self, input, expected_result):
         error = 0

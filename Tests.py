@@ -13,7 +13,7 @@ from Functions import get_function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
 from Network import *
-
+import collections
 
 def get_algorithm(index):
     '''
@@ -234,7 +234,7 @@ def PlotIris(option):
         # print (row,expected)
 
     if option == "iris_single_try":
-        LOOPS=30
+        LOOPS=10
         net = geneticNetwork([4, 3, 3, 3], 50,5)
         net_normal = network([4, 3, 3, 3], net_gradient,1)
         error_genetic = []
@@ -271,7 +271,7 @@ def PlotIris(option):
         plot2.plot(domain, error_genetic, label="price")
         plot2.set_xlabel("iteration")
         plot2.set_ylabel("total error")
-        plot2.set_title("Learnig curve - genetic")
+        plot2.set_title("Learnig curve - genetic - batch size 5")
         # linia trendu \/
         z = numpy.polyfit(domain, error_genetic, 1)
         p = numpy.poly1d(z)
@@ -331,8 +331,8 @@ def PlotIris(option):
             print(j)
             random.shuffle(net_data)
             # resetowanie sieci
-            net = geneticNetwork([4, 3, 3, 3], 50)
-            net_normal = network([4, 3, 3, 3], net_gradient)
+            net = geneticNetwork([4, 3, 3, 3], 50,5)
+            net_normal = network([4, 3, 3, 3], net_gradient,5)
 
             start = time.time()
             net.start_learning()
@@ -357,13 +357,13 @@ def PlotIris(option):
         plot1 = plt.subplot2grid((2, 1), (0, 0))
         plot1.plot(domain, time_gradient)
         plot1.set_xlabel("attempt")
-        plot1.set_ylabel("time needed to learn")
+        plot1.set_ylabel("time needed to learn[s]")
         plot1.set_title("Time spent on learning- gradient")
 
         plot2 = plt.subplot2grid((2, 1), (1, 0))
         plot2.plot(domain, time_genetic)
         plot2.set_xlabel("attempt")
-        plot2.set_ylabel("time needed to learn")
+        plot2.set_ylabel("time needed to learn[s]")
         plot2.set_title("Time spent on learning- genetic")
 
         plt.show()
@@ -395,6 +395,82 @@ def PlotIris(option):
 
         for i in range(ROWS):
             print(net.process(net_data[i][0]),net_data[i][1])
+
+
+    if option == "test_generalism":
+        def Compare_lists(a,b):
+            if len(a)==len(b):
+                for i in range(len(a)):
+                    if a[i] != b[i]:
+                        return False
+                return True
+            else:
+                return False
+
+        def ParseOutpus(list):
+            for i in range(len(list)):
+                list[i]=round(list[i])
+            return list
+
+
+        LOOPS = 10
+        LEARNING_LOOPS = 10
+        TEST_PROBES=10
+        # tutaj operujemy na input i expected
+        accuracy_gradient=[]
+        accuracy_genetic=[]
+        for j in range(LOOPS):
+            print(j)
+            net = geneticNetwork([4, 3, 3, 3], 50, 5)
+            net_normal = network([4, 3, 3, 3], net_gradient, 1)
+            net.start_learning()
+            net_normal.start_learning()
+            for _ in range(LEARNING_LOOPS):
+                for i in range(ROWS-TEST_PROBES):
+                    net.process(net_data[i][0])
+                    net.correct(net_data[i][1])
+                    net_normal.process(net_data[i][0])
+                    net_normal.correct(net_data[i][1])
+            net_normal.stop_learning()
+            net.stop_learning()
+
+            genetic_hits=0
+            gradient_hits=0
+            for i in range(ROWS-TEST_PROBES,ROWS):
+                otp=ParseOutpus(net_normal.process(net_data[i][0]))
+                if Compare_lists(otp,net_data[i][1]):
+                    gradient_hits+=1
+                otp = ParseOutpus(net.process(net_data[i][0]))
+                if Compare_lists(otp,net_data[i][1]):
+                    genetic_hits+=1
+
+            accuracy_gradient.append(gradient_hits/TEST_PROBES)
+            accuracy_genetic.append(genetic_hits/TEST_PROBES)
+
+
+        domain = range(1, LOOPS + 1)
+
+        plot1 = plt.subplot2grid((2, 1), (0, 0))
+        plot1.plot(domain, accuracy_gradient, label="price")
+        plot1.set_xlabel("attempt")
+        plot1.set_ylabel("accuracy")
+        plot1.set_title("Gradient Accuracy learning loops =10")
+        # linia trendu \/
+        z = numpy.polyfit(domain, accuracy_gradient, 1)
+        p = numpy.poly1d(z)
+        plot1.plot(domain, p(domain), "r--")
+
+        # plt.plot(range(150), error_normal, label="oś x")
+        plot2 = plt.subplot2grid((2, 1), (1, 0))
+        plot2.plot(domain, accuracy_genetic, label="price")
+        plot2.set_xlabel("attempt")
+        plot2.set_ylabel("accuracy")
+        plot2.set_title("Genetic Accuracy TEST_PROBES=10")
+        # linia trendu \/
+        z = numpy.polyfit(domain, accuracy_genetic, 1)
+        p = numpy.poly1d(z)
+        plot2.plot(domain, p(domain), "r--")
+        plt.show()
 
 def PlotBeans(option):
     ROWS = 13611 #nadpisuje, bo dla większej liczby to trwa wieki XD
@@ -446,13 +522,14 @@ def PlotBeans(option):
         input[i] = row
         expected[i] = name_to_tuple_beans(name)
         net_data[i] = (row, expected[i])
+
         # print (row,expected)
 
     if option == "beans_single_try":
         batch_size=100
-        LOOPS=24
+        LOOPS=20
         domain = range(0,ROWS*LOOPS,batch_size)
-        net = geneticNetwork([16, 8, 8, 7], 50,batch_size)
+        net = geneticNetwork([16, 8, 8, 7], 50,14)
         net_normal = network([16, 8, 8, 7], net_gradient,batch_size)
         #error_genetic = [0]*ROWS
         error_genetic = []
@@ -555,3 +632,167 @@ def PlotBeans(option):
 
         for i in range(ROWS):
             print(net_normal.process(net_data[i][0]),net_data[i][1])
+
+    if option == "test_generalism":
+        def Compare_lists(a,b):
+            if len(a)==len(b):
+                for i in range(len(a)):
+                    if a[i] != b[i]:
+                        return False
+                return True
+            else:
+                return False
+
+        def ParseOutpus(list):
+            for i in range(len(list)):
+                list[i]=round(list[i])
+            return list
+
+        ROWS = 100
+        LOOPS = 2
+        LEARNING_LOOPS = 35
+        TEST_PROBES=100
+        # tutaj operujemy na input i expected
+        accuracy_gradient=[]
+        accuracy_genetic=[]
+        for j in range(LOOPS):
+            print(j)
+            random.shuffle(net_data)
+            net = geneticNetwork([16, 12, 10, 8, 7], 50,2)
+            net_normal = network([16, 12, 10, 8, 7], net_gradient,5)
+            net.start_learning()
+            net_normal.start_learning()
+            for _ in range(LEARNING_LOOPS):
+                for i in range(ROWS-TEST_PROBES):
+                    net.process(net_data[i][0])
+                    net.correct(net_data[i][1])
+                    net_normal.process(net_data[i][0])
+                    net_normal.correct(net_data[i][1])
+            net_normal.stop_learning()
+            net.stop_learning()
+
+            genetic_hits=0
+            gradient_hits=0
+            for i in range(ROWS-TEST_PROBES,ROWS):
+                otp=ParseOutpus(net_normal.process(net_data[i][0]))
+                if Compare_lists(otp,net_data[i][1]):
+                    gradient_hits+=1
+                otp = ParseOutpus(net.process(net_data[i][0]))
+                if Compare_lists(otp,net_data[i][1]):
+                    genetic_hits+=1
+
+            accuracy_gradient.append(gradient_hits/TEST_PROBES)
+            accuracy_genetic.append(genetic_hits/TEST_PROBES)
+
+
+        domain = range(1, LOOPS + 1)
+
+        plot1 = plt.subplot2grid((2, 1), (0, 0))
+        plot1.plot(domain, accuracy_gradient, label="price")
+        plot1.set_xlabel("attempt")
+        plot1.set_ylabel("accuracy")
+        plot1.set_title("Gradient Accuracy learning loops =30")
+        # linia trendu \/
+        z = numpy.polyfit(domain, accuracy_gradient, 1)
+        p = numpy.poly1d(z)
+        plot1.plot(domain, p(domain), "r--")
+
+        # plt.plot(range(150), error_normal, label="oś x")
+        plot2 = plt.subplot2grid((2, 1), (1, 0))
+        plot2.plot(domain, accuracy_genetic, label="price")
+        plot2.set_xlabel("attempt")
+        plot2.set_ylabel("accuracy")
+        plot2.set_title("Genetic Accuracy TEST_PROBES=10")
+        # linia trendu \/
+        z = numpy.polyfit(domain, accuracy_genetic, 1)
+        p = numpy.poly1d(z)
+        plot2.plot(domain, p(domain), "r--")
+        plt.show()
+
+def PlotRisin(option):
+    ROWS = 900
+    def name_to_tuple_Risin(name):
+        if name == "Kecimen":
+            return [1,  0]
+        elif name == "Besni":
+            return [0, 1]
+
+    #stworzenie bazy danych
+    file = open("Raisin_Dataset/Raisin_Dataset.arff")
+    csvreader = csv.reader(file)
+
+    table = []
+    for row in csvreader:
+        table.append(row)
+
+    random.shuffle(table)
+    net_data = [None] * ROWS
+    input = [None] * ROWS
+    expected = [None] * ROWS
+    for i in range(ROWS):
+        row = table[i]
+        name = row[7]
+        row = row[:7]
+        for j in range(7):
+            row[j] = float(row[j])  # konwersja
+
+        # poprawianie do przedziału (0,1)
+        row[0] = row[0] / 235047
+        row[1] = row[1] / 1000
+        row[2] = row[2] / 493
+        row[4] = row[4] / 278217
+        row[6] = row[6] / 2700
+
+        input[i] = row
+        expected[i] = name_to_tuple_Risin(name)
+        net_data[i] = (row, expected[i])
+        # print (row,expected)
+
+    if option == "risin_single_try":
+        LOOPS=30
+        net = geneticNetwork([7, 4, 4, 2], 100, 10)
+        net_normal = network([7, 4, 4, 2], net_gradient,10)
+        error_genetic = []
+        error_normal = []
+        #tutaj operujemy na input i expected
+        net.start_learning()
+        net_normal.start_learning()
+        for j in range(LOOPS):
+            for i in range(ROWS):
+                net.process(net_data[i][0])
+                net.correct(net_data[i][1])
+                net_normal.process(net_data[i][0])
+                net_normal.correct(net_data[i][1])
+                error_normal.append(net_normal.total_error(input,expected))
+                error_genetic.append(net.total_error(input, expected))
+                print(j,i)
+        net_normal.stop_learning()
+        net.stop_learning()
+
+        domain=range(1,ROWS*LOOPS+1)
+
+        plot1 = plt.subplot2grid((2,1), (0, 0))
+        plot1.plot(domain, error_normal, label="price")
+        plot1.set_xlabel("iteration")
+        plot1.set_ylabel("total error")
+        plot1.set_title("Learnig curve - gradient")
+        #linia trendu \/
+        z = numpy.polyfit(domain, error_normal, 1)
+        p = numpy.poly1d(z)
+        plot1.plot(domain, p(domain), "r--")
+
+        #plt.plot(range(150), error_normal, label="oś x")
+        plot2 = plt.subplot2grid((2, 1), (1, 0))
+        plot2.plot(domain, error_genetic, label="price")
+        plot2.set_xlabel("iteration")
+        plot2.set_ylabel("total error")
+        plot2.set_title("Learnig curve - genetic - batch size 5")
+        # linia trendu \/
+        z = numpy.polyfit(domain, error_genetic, 1)
+        p = numpy.poly1d(z)
+        plot2.plot(domain, p(domain), "r--")
+        plt.show()
+
+        for i in range(ROWS):
+            print(net_normal.process(net_data[i][0]),net_data[i][1])
+            print(net.process(net_data[i][0]), net_data[i][1])

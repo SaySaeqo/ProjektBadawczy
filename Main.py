@@ -14,14 +14,17 @@ from re import sub
 # 1 0 1 1
 # 1 1 0 0
 # 0 0 0 0
-PlotIris("iris_single_try")
+#PlotIris("iris_single_try")
 #PlotIris("iris_genetic_learn_many_attempts")
 #PlotIris("iris_genetic_time_comparison")
 #PlotIris("test_gradient")
 #PlotIris("test_genetic")
+#PlotIris("test_generalism")
 #PlotBeans("beans_single_try")
 #PlotBeans("beans_genetic_learn_many_attempts")
 #PlotBeans("test_gradient")
+#PlotBeans("test_generalism")
+PlotRisin("risin_single_try")
 
 
 ''' # tu test na zerach i jedynkach
