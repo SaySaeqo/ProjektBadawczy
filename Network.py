@@ -336,8 +336,8 @@ class geneticNetwork(network):
         prev_best = self.nets[:5]
 
         # wpierw symulowanie każdej sieci
-        for net in self.nets:
-            net.process(self.args)
+        #for net in self.nets:
+        #    net.process(self.args)
 
         # i teraz genetyka
         crossed = self.cross_nets()

@@ -324,8 +324,8 @@ def PlotIris(option):
     if option == "iris_genetic_time_comparison":
         # a potem wielu sieci naraz
         # uczymy obie sieci od nowa 100 razy
-        time_gradient = []
         time_genetic = []
+        time_gradient = []
         domain = range(10)
         for j in domain:
             print(j)
@@ -796,3 +796,126 @@ def PlotRisin(option):
         for i in range(ROWS):
             print(net_normal.process(net_data[i][0]),net_data[i][1])
             print(net.process(net_data[i][0]), net_data[i][1])
+
+    if option == "test_generalism":
+        def Compare_lists(a,b):
+            if len(a)==len(b):
+                for i in range(len(a)):
+                    if a[i] != b[i]:
+                        return False
+                return True
+            else:
+                return False
+
+        def ParseOutpus(list):
+            for i in range(len(list)):
+                list[i]=round(list[i])
+            return list
+
+        LOOPS = 2
+        LEARNING_LOOPS = 10
+        TEST_PROBES = 50
+        # tutaj operujemy na input i expected
+        accuracy_gradient = []
+        accuracy_genetic = []
+
+        for j in range(LOOPS):
+            net = geneticNetwork([7, 4, 4, 2], 50, 10)
+            net_normal = network([7, 4, 4, 2], net_gradient, 10)
+            net.start_learning()
+            net_normal.start_learning()
+            for k in range(LEARNING_LOOPS):
+                for i in range(ROWS - TEST_PROBES):
+                    print(j,k,i)
+                    net.process(net_data[i][0])
+                    net.correct(net_data[i][1])
+                    net_normal.process(net_data[i][0])
+                    net_normal.correct(net_data[i][1])
+            net_normal.stop_learning()
+            net.stop_learning()
+
+            genetic_hits = 0
+            gradient_hits = 0
+            for i in range(ROWS - TEST_PROBES, ROWS):
+                otp = ParseOutpus(net_normal.process(net_data[i][0]))
+                if Compare_lists(otp, net_data[i][1]):
+                    gradient_hits += 1
+                otp = ParseOutpus(net.process(net_data[i][0]))
+                if Compare_lists(otp, net_data[i][1]):
+                    genetic_hits += 1
+
+            accuracy_gradient.append(gradient_hits / TEST_PROBES)
+            accuracy_genetic.append(genetic_hits / TEST_PROBES)
+
+        domain = range(1, LOOPS + 1)
+
+        plot1 = plt.subplot2grid((2,1), (0, 0))
+        plot1.plot(domain, accuracy_gradient, label="price")
+        plot1.set_xlabel("iteration")
+        plot1.set_ylabel("total error")
+        plot1.set_title("Learnig curve - gradient")
+        #linia trendu \/
+        z = numpy.polyfit(domain, accuracy_gradient, 1)
+        p = numpy.poly1d(z)
+        plot1.plot(domain, p(domain), "r--")
+
+        #plt.plot(range(150), error_normal, label="oś x")
+        plot2 = plt.subplot2grid((2, 1), (1, 0))
+        plot2.plot(domain, accuracy_genetic, label="price")
+        plot2.set_xlabel("iteration")
+        plot2.set_ylabel("total error")
+        plot2.set_title("Learnig curve - genetic - batch size 5")
+        # linia trendu \/
+        z = numpy.polyfit(domain, accuracy_genetic, 1)
+        p = numpy.poly1d(z)
+        plot2.plot(domain, p(domain), "r--")
+        plt.show()
+
+    if option == "risin_time_comparison":
+        # a potem wielu sieci naraz
+        # uczymy obie sieci od nowa 100 razy
+        time_genetic = []
+        time_gradient = []
+        domain = range(2)
+        for j in domain:
+            print(j)
+            random.shuffle(net_data)
+            # resetowanie sieci
+            net = geneticNetwork([7, 4, 4, 2], 50, 10)
+            net_normal = network([7, 4, 4, 2], net_gradient, 10)
+
+            start = time.time()
+            net.start_learning()
+            for i in range(ROWS):
+                net.process(net_data[i][0])
+                net.correct(net_data[i][1])
+            net.stop_learning()
+
+            end = time.time()
+            time_genetic.append(end-start)
+
+            start = time.time()
+            net_normal.start_learning()
+            for i in range(ROWS):
+                net_normal.process(net_data[i][0])
+                net_normal.correct(net_data[i][1])
+            net_normal.stop_learning()
+
+            end = time.time()
+            time_gradient.append(end - start)
+
+        plot1 = plt.subplot2grid((2, 1), (0, 0))
+        plot1.plot(domain, time_gradient)
+        plot1.set_xlabel("attempt")
+        plot1.set_ylabel("time needed to learn[s]")
+        plot1.set_title("Time spent on learning- gradient")
+
+        plot2 = plt.subplot2grid((2, 1), (1, 0))
+        plot2.plot(domain, time_genetic)
+        plot2.set_xlabel("attempt")
+        plot2.set_ylabel("time needed to learn[s]")
+        plot2.set_title("Time spent on learning- genetic")
+
+        plt.show()
+
+

@@ -14,7 +14,7 @@ from re import sub
 # 1 0 1 1
 # 1 1 0 0
 # 0 0 0 0
-#PlotIris("iris_single_try")
+PlotIris("iris_single_try")
 #PlotIris("iris_genetic_learn_many_attempts")
 #PlotIris("iris_genetic_time_comparison")
 #PlotIris("test_gradient")
@@ -24,7 +24,9 @@ from re import sub
 #PlotBeans("beans_genetic_learn_many_attempts")
 #PlotBeans("test_gradient")
 #PlotBeans("test_generalism")
-PlotRisin("risin_single_try")
+#PlotRisin("risin_single_try")
+#PlotRisin("test_generalism")
+#PlotRisin("risin_time_comparison")
 
 
 ''' # tu test na zerach i jedynkach
