@@ -4,11 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from matplotlib import pyplot as plt
 
-from Functions import get_function
-from Genetic_Algorithms import *
-from Gradient_Algorithm import *
-from Network import network
+from utils import Function
+from genetic import *
+from gradient import *
+from network import Network
 
 
 def get_algorithm(index):
@@ -54,11 +55,12 @@ def test_algorithms():
         # testujemy każdą funkcję
         algoritm_name, algorithm = get_algorithm(i)
         func_errors = []
-        for j in range(FUNCTIONS_NUMBER):
-            func = get_function(j + 1)
+        j = 0
+        for func in Function.get_all():
             result = algorithm(func.function, func.arg_num, func.domain, func.min_max, PROBE_NUMBER)
             error = calc_error(result, func.solutions)
             func_errors.append((j + 1, error))
+            j += 1
         alg_errors = (algoritm_name, func_errors)
         stats_per_algorithm.append(alg_errors)
 
@@ -75,8 +77,10 @@ def test_gradient_learnrate():
         lowest = math.inf
         it = math.inf
         ar = 0
+        functions = Function.get_all()
         for _ in range(100):
-            func, start = Functions.get_function(i)
+            func = functions[i]
+            start = func.random_data()
             lr = 0.00003
             if i == 3:
                 lr = 150.0 / 300000.0
@@ -90,27 +94,36 @@ def test_gradient_learnrate():
 
 
 def test_neuron():
-    N = 1000
-    nrn_nmb = [3, 5, 5, 4]
-    net = network(nrn_nmb, net_gradient)
+    model = [3,5,5, 4]
+    net = Network(model, correct_func=net_gradient)
 
-    # print (net)
-    for i in range(N):
-        net.process([0, 0, 0])
-        net.correct([1, 1, 1, 1])
-        net.process([0, 1, 0])
-        net.correct([1, 0, 1, 1])
-        net.process([0, 1, 1])
-        net.correct([1, 1, 0, 0])
-        net.process([1, 1, 1])
-        net.correct([0, 0, 0, 0])
-        print(f"\r{i}/{N}", end="")
-    # print(net)
+    print (net)
+    inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
+    targets = [[1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
+    steps = net.correct(inputs, targets)
+    #print(f"\r{i}/{N}", end="")
+    print("----------\nPO TRENINGU\n----------")
+    print(net)
     #                          oczekiwane wyniki:
-    print(net.process([0, 0, 0]))  # 1 1 1 1
-    print(net.process([0, 1, 0]))  # 1 0 1 1
-    print(net.process([0, 1, 1]))  # 1 1 0 0
-    print(net.process([1, 1, 1]))  # 0 0 0 0
+    print(net.process([0.0, 0.0, 0.0]))  # 1 1 1 1
+    print(net.process([0.0, 1.0, 0.0]))  # 1 0 1 1
+    print(net.process([0.0, 1.0, 1.0]))  # 1 1 0 0
+    print(net.process([1.0, 1.0, 1.0]))  # 0 0 0 0
+    print("1 1 1 1")
+    print("1 0 1 1")
+    print("1 1 0 0")
+    print("0 0 0 0")
+
+    plt.figure()
+    plt.plot(steps[0:-4:4])
+    plt.plot(steps[1:-3:4])
+    plt.plot(steps[2:-2:4])
+    plt.plot(steps[3:-1:4])
+    plt.legend(["000->1111", "010->1011", "011->1100", "111->0000"])
+    plt.xlabel("iterations")
+    plt.ylabel("cost")
+    plt.grid(linestyle='--')
+    plt.show()
 
 
 def test_neuron_libs(lib="neurolab"):

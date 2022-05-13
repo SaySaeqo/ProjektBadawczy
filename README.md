@@ -4,8 +4,9 @@ rozszerzenie przestrzeni poszukiwań. Poprawianie wydajności w
 porównaniu np. z algorytmem gradientowym.
 
 # Stylizacja
-Funkcje,zmienne -> snake_case  
-klasy -> camelCase  
+pliki, moduły -> małymibezspacji  
+funkcje, zmienne -> snake_case  
+klasy -> CamelCase  
 stale -> TAB
 
 # Plan działania
@@ -17,7 +18,9 @@ stale -> TAB
 4. Zakodowanie algorytmu gradientowego ✓  
 5. Połączenie algorytmu gradientowego z genetycznym
     algorytm genetyczny wykorzystuje funkcje gradient(), która zwraca tablicę pochodnych
-6. Dalsza analiza i ulepszenia  
+6. Algorytm neuronowy z gradientowym uczeniem ✓
+7. Algorytm neuronowy z genetycznym uczeniem
+8. Dalsza analiza i ulepszenia  
 
 # Changelog
 1. Stworzenie plików startowych...  
