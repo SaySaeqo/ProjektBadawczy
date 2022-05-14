@@ -6,6 +6,28 @@ import testfunctions as tf
 from constants import *
 
 
+def progress_bar(current, max):
+    """
+    current/max [████████████████____]
+
+    :param current: counter (usually from 0 to max - 1)
+    :param max: max value exclusively
+    :return: void
+    """
+    current += 1
+    percent = "["
+    five_percent = max / 20.0
+    current_percent = five_percent
+    while current_percent <= max:
+        if current >= current_percent:
+            percent += "█"
+        else:
+            percent += " "
+        current_percent += five_percent
+    percent += "]"
+    print(f"\r{current}/{max} {percent}", end="")
+
+
 def random_data(domain_list):
     """
 
@@ -33,7 +55,7 @@ def sigmoid_der(x):
     :param x:  number
     :return:  number beetwen 0 and 1
     """
-    if isinstance(x,np.matrix):
+    if isinstance(x, np.matrix):
         return np.multiply(sigmoid(x), (1 - sigmoid(x)))
     return sigmoid(x) * (1 - sigmoid(x))
 

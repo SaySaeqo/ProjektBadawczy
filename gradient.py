@@ -77,6 +77,7 @@ def computate_derivatives(net, input, ex_output):
     # computate values for each neuron
     net_output = net.process(input)
     # d_cost/d_value from net output
+    net_output = np.matrix(net_output)
     ex_output = np.matrix(ex_output)
     d_cost_d_a = 2 * (net_output - ex_output)
     for i in reversed(range(1, net.nb_layers)):
@@ -93,9 +94,9 @@ def computate_derivatives(net, input, ex_output):
 
     return ders_net
 
-def net_gradient(net, inputs, expected_outputs):
+def net_gradient(net, *args, **kwargs):
     """
-    Correct function for neural network. Uses gradient mechanics to upgrade network weights and biases.
+    Correct function for neural network. Uses **gradient** mechanics to upgrade network weights and biases.
 
     :param inputs: list of network's inputs
         (when single input for network is a list, then it is list of lists)
@@ -106,14 +107,25 @@ def net_gradient(net, inputs, expected_outputs):
     # cost need to be minimal
     steps = []  # cost function values over iterations
 
-    BATCH_SIZE = min(10, len(inputs))
+    BATCH_SIZE = kwargs.get("batch_size", 10)
+
+    # support for arguments type: list of tuples (input, ex_output)
+    if len(args) == 1:
+        args = args[0]
+    elif len(args) == 2:
+        inputs, ex_outputs = args
+        args = list(zip(inputs, ex_outputs))
 
     for iter in range(MAX_ITERATIONS):
         ders_buffer = []
         batch_count=0
-        for input, ex_output in zip(inputs, expected_outputs):
-            # cost = np.sum(np.float_power(net(input) - ex_output, 2))
-            # steps += [cost]
+        semi_step = []
+        for input, ex_output in args:
+            # for debugging
+            input = np.matrix(input)
+            ex_output = np.matrix(ex_output)
+            cost = np.sum(np.float_power(net(input) - ex_output, 2))
+            semi_step += [cost]
 
             # ders is Network object which contains derivatives for weights and biases
             ders = computate_derivatives(net,input,ex_output)
@@ -129,4 +141,9 @@ def net_gradient(net, inputs, expected_outputs):
         if len(ders_buffer) > 0:
             net -= average(ders_buffer)
 
-    # return steps
+        if kwargs.get("test_network_simple"):
+            steps += semi_step
+        else:
+            steps += [sum(semi_step) / len(semi_step)]
+
+    return steps

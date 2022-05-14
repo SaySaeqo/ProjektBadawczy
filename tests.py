@@ -1,3 +1,7 @@
+import csv
+import random
+import time
+
 import neurolab as nl
 import numpy as np
 import torch
@@ -6,7 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from matplotlib import pyplot as plt
 
-from utils import Function
+from utils import Function, progress_bar
 from genetic import *
 from gradient import *
 from network import Network
@@ -93,16 +97,16 @@ def test_gradient_learnrate():
         print(i, ar, lowest)
 
 
-def test_neuron():
-    model = [3,5,5, 4]
-    net = Network(model, correct_func=net_gradient)
+def test_network_simple(correct_func):
+    model = [3, 5, 5, 4]
+    net = Network(model, correct_func=correct_func)
 
-    print (net)
+    print(net)
     inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
     targets = [[1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
-    steps = net.correct(inputs, targets)
-    #print(f"\r{i}/{N}", end="")
-    print("----------\nPO TRENINGU\n----------")
+    steps = net.train(inputs, targets, test_network_simple=True)
+    # print(f"\r{i}/{N}", end="")
+    print("-*-*-*-*-*-*-*-*-*-\nPO TRENINGU\n-*-*-*-*-*-*-*-*-*-")
     print(net)
     #                          oczekiwane wyniki:
     print(net.process([0.0, 0.0, 0.0]))  # 1 1 1 1
@@ -119,11 +123,13 @@ def test_neuron():
     plt.plot(steps[1:-3:4])
     plt.plot(steps[2:-2:4])
     plt.plot(steps[3:-1:4])
+    plt.title(str(correct_func))
     plt.legend(["000->1111", "010->1011", "011->1100", "111->0000"])
     plt.xlabel("iterations")
     plt.ylabel("cost")
     plt.grid(linestyle='--')
     plt.show()
+
 
 
 def test_neuron_libs(lib="neurolab"):
@@ -154,6 +160,7 @@ def test_neuron_libs(lib="neurolab"):
         # 0 0 0 0
     elif lib == "pytorch":
         print("PYTORCH LIBRARY\n")
+
         # https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
         class Net(nn.Module):
 
@@ -187,7 +194,7 @@ def test_neuron_libs(lib="neurolab"):
 
         # create your optimizer
         optimizer = optim.SGD(net.parameters(), lr=0.01)
-        N = 2**15
+        N = 2 ** 15
         for i in range(N):
             # training
             optimizer.zero_grad()  # zero the gradient buffers
@@ -205,3 +212,73 @@ def test_neuron_libs(lib="neurolab"):
         # 1 0 1 1
         # 1 1 0 0
         # 0 0 0 0
+
+
+def getIrisDB():
+    def name2tuple(name):
+        if name == "Iris-setosa":
+            return (1, 0, 0)
+        elif name == "Iris-versicolor":
+            return (0, 1, 0)
+        elif name == "Iris-virginica":
+            return (0, 0, 1)
+
+    # stworzenie bazy danych
+    with open("iris.data") as file:  # Przez cb 3 małe kotki umarły, bo nie zamykałeś pliku
+        csvreader = csv.reader(file)
+
+        table = []
+        for row in csvreader:
+            table.append(row)
+
+        table.pop()  # last one is empty array (eof I suppose)
+        random.shuffle(table)
+
+        net_data = []
+        for row in table:
+            name = row[4]
+            row = [float(elem) / 7 for elem in row[:4]]
+
+            input = row
+            expected = name2tuple(name)
+            net_data += [(input, expected)]
+    return net_data
+
+
+def test_network(database, net_model, train_func, nb_tests=10, test_data_length=3):
+    # counting total time and succes rate on new data
+    total_success_rate = 0.0
+    time_per_train = []
+    steps = []
+
+    for i in range(nb_tests):
+        # preparing data
+        random.shuffle(database)
+        test_data = database[-test_data_length:]
+        train_data = database[:-test_data_length]
+        net = Network(net_model, train_func)
+        # training
+        start = time.time()
+        steps = net.train(train_data)
+        stop = time.time()
+        time_per_train += [stop - start]
+        # checking results
+        success_rate = 0
+        for data in test_data:
+            results = net(data[0])
+            if all(abs(i - correct) < 0.2 for i, correct in zip(results, data[1])):
+                success_rate += 1
+            if nb_tests == 1:
+                print(results, data[1])
+        success_rate /= len(test_data)
+        total_success_rate += success_rate
+        # printing progress
+        progress_bar(i, nb_tests)
+
+    total_success_rate /= nb_tests
+    print("\nNets trained: ", nb_tests)
+    print("Success rate: ", total_success_rate * 100, " %")
+    total_time = sum(time_per_train)
+    print("Time: ", int(total_time) // 60, " min ", int(total_time) % 60, " sec")
+
+    return steps, time_per_train
