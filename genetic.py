@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 
 import network
@@ -122,8 +124,8 @@ def net_genetic(net: Network, *args, **kwargs):
     steps = []  # cost function values over iterations
 
     POPULATION_SIZE = kwargs.get("population_size", 50)
-    ELITE_SIZE = kwargs.get("elite_size", 5)
-    MUTATION_CHANCE = kwargs.get("mutation_chance", 0.15)
+    # ELITE_SIZE = kwargs.get("elite_size", 2)
+    MUTATION_CHANCE = kwargs.get("mutation_chance", 0.5)
 
     # support for arguments type: list of tuples (input, ex_output)
     if len(args) == 1:
@@ -145,37 +147,30 @@ def net_genetic(net: Network, *args, **kwargs):
                      for individual in population)
             population = [(individual, cost) for individual, cost in zip(population, costs)]
             population.sort(key=lambda a: a[1])
-            elite = [individual for individual, cost in population[:ELITE_SIZE]]
+            # elite = [individual for individual, cost in population[:ELITE_SIZE]]
             semi_step += [population[0][1]]  # for statistics
             population = [individual for individual, cost in population]
 
-            # # crossover
-            # children = []
-            # for _ in range(ELITE_SIZE, POPULATION_SIZE):
-            #     parents = random.sample(elite, 2)
-            #     child = Network.create_empty(parents[0].model_shape)
-            #     for i in range(child.nb_layers):
-            #         child.layers[i] = parents[0].layers[i]
-            #     children += [child]
-            # population = elite + children
+            # crossover
+            children = [copy.deepcopy(population[0]) for _ in range(int(POPULATION_SIZE / 3))]
+            children += [copy.deepcopy(population[1]) for _ in range(int(POPULATION_SIZE / 3))]
+            children += [network.average([population[0], population[1]]) for _ in range(int(POPULATION_SIZE / 3))]
 
             # mutation
-            for individual in population[ELITE_SIZE:]:
+            for individual in children:
                 layer = random.choice(individual.layers)
                 w, b, _, _ = layer
 
                 for i in range(len(w)):
                     for j in range(len(w[i])):
                         if random.random() < MUTATION_CHANCE:
-                            w[i][j] += 0.1 * random.choice([-1, 1])
+                            w[i][j] += random.uniform(-0.125, 0.125)
                 for i in range(len(b)):
                     for j in range(len(b[i])):
                         if random.random() < MUTATION_CHANCE:
-                            b[i][j] += 0.1 * random.choice([-1, 1])
-                # weights_diff = np.random.rand(*w.shape) - 0.5
-                # biases_diff = np.random.rand(*b.shape) - 0.5
-                # w += weights_diff
-                # b += biases_diff
+                            b[i][j] += random.uniform(-0.125, 0.125)
+
+            population = population[:2] + children[:POPULATION_SIZE-2]
 
         if kwargs.get("test_network_simple"):
             steps += semi_step

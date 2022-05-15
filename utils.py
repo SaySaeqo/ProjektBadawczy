@@ -26,6 +26,8 @@ def progress_bar(current, max):
         current_percent += five_percent
     percent += "]"
     print(f"\r{current}/{max} {percent}", end="")
+    if current == max:
+        print()
 
 
 def random_data(domain_list):

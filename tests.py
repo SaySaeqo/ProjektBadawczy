@@ -217,11 +217,11 @@ def test_neuron_libs(lib="neurolab"):
 def getIrisDB():
     def name2tuple(name):
         if name == "Iris-setosa":
-            return (1, 0, 0)
+            return (0, 0)
         elif name == "Iris-versicolor":
-            return (0, 1, 0)
+            return (0, 1)
         elif name == "Iris-virginica":
-            return (0, 0, 1)
+            return (1, 1)
 
     # stworzenie bazy danych
     with open("iris.data") as file:  # Przez cb 3 małe kotki umarły, bo nie zamykałeś pliku
@@ -237,7 +237,7 @@ def getIrisDB():
         net_data = []
         for row in table:
             name = row[4]
-            row = [float(elem) / 7 for elem in row[:4]]
+            row = [float(elem) for elem in row[:4]]
 
             input = row
             expected = name2tuple(name)

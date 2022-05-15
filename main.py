@@ -5,8 +5,8 @@ from tests import *
 
 
 net_data = getIrisDB()
-net_model = [4, 3, 3]
-nb_tests = 10
+net_model = [4, 5, 5, 2]
+nb_tests = 1
 
 plt.figure()
 plt.title("Neural network training method comparison")
