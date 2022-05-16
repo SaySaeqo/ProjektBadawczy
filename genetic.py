@@ -111,6 +111,7 @@ def genetic_func_mean_random4():
     pass
 
 
+
 def net_genetic(net: Network, *args, **kwargs):
     """
     Correct function for neural network. Uses **genetic algorithm** to upgrade network weights and biases.
@@ -124,7 +125,7 @@ def net_genetic(net: Network, *args, **kwargs):
     steps = []  # cost function values over iterations
 
     POPULATION_SIZE = kwargs.get("population_size", 50)
-    # ELITE_SIZE = kwargs.get("elite_size", 2)
+    ELITE_SIZE = kwargs.get("elite_size", 2)
     MUTATION_CHANCE = kwargs.get("mutation_chance", 0.5)
 
     # support for arguments type: list of tuples (input, ex_output)
@@ -138,27 +139,32 @@ def net_genetic(net: Network, *args, **kwargs):
 
     for iter in range(MAX_GENERATIONS):
         semi_step = []
-        for input, ex_output in args:
 
-            # selection
-            input = np.matrix(input)
-            ex_output = np.matrix(ex_output)
-            costs = (np.sum(np.float_power(individual(input) - ex_output, 2))
-                     for individual in population)
-            population = [(individual, cost) for individual, cost in zip(population, costs)]
-            population.sort(key=lambda a: a[1])
-            # elite = [individual for individual, cost in population[:ELITE_SIZE]]
-            semi_step += [population[0][1]]  # for statistics
-            population = [individual for individual, cost in population]
+        def fitness(network):
+            costs = []
+            for input, ex_output in args:
+                output = network(input)
+                costs += [np.float_power(output - np.matrix(ex_output), 2)]
+            return np.mean(costs)
 
-            # crossover
-            children = [copy.deepcopy(population[0]) for _ in range(int(POPULATION_SIZE / 3))]
-            children += [copy.deepcopy(population[1]) for _ in range(int(POPULATION_SIZE / 3))]
-            children += [network.average([population[0], population[1]]) for _ in range(int(POPULATION_SIZE / 3))]
 
-            # mutation
-            for individual in children:
-                layer = random.choice(individual.layers)
+        # selection
+
+        # sorting by cost
+
+        population.sort(key=lambda a: fitness(a))
+        semi_step += [fitness(population[0])]  # smallest cost for statistics
+
+        elite = population[:ELITE_SIZE]
+
+        # crossover
+        children = [copy.deepcopy(population[0]) for _ in range(int(POPULATION_SIZE / 3))]
+        children += [copy.deepcopy(population[1]) for _ in range(int(POPULATION_SIZE / 3))]
+        children += [network.average([population[0], population[1]]) for _ in range(int(POPULATION_SIZE / 3))]
+
+        # mutation
+        for individual in children:
+            for layer in individual.layers:
                 w, b, _, _ = layer
 
                 for i in range(len(w)):
@@ -170,12 +176,12 @@ def net_genetic(net: Network, *args, **kwargs):
                         if random.random() < MUTATION_CHANCE:
                             b[i][j] += random.uniform(-0.125, 0.125)
 
-            population = population[:2] + children[:POPULATION_SIZE-2]
+        population = population[:2] + children[:POPULATION_SIZE-2]
 
         if kwargs.get("test_network_simple"):
             steps += semi_step
         else:
-            steps += [sum(semi_step) / len(semi_step)]
+            steps += [np.mean(semi_step)]
 
         if MAX_GENERATIONS > 200:
             progress_bar(iter, MAX_GENERATIONS)

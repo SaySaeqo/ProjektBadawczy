@@ -144,6 +144,6 @@ def net_gradient(net, *args, **kwargs):
         if kwargs.get("test_network_simple"):
             steps += semi_step
         else:
-            steps += [sum(semi_step) / len(semi_step)]
+            steps += [np.mean(semi_step)]
 
     return steps
