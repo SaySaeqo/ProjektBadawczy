@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from matplotlib import pyplot as plt
 
-from utils import Function, progress_bar
+from utils import Function, progress_bar, sigmoid
 from genetic import *
 from gradient import *
 from network import Network
@@ -213,7 +213,7 @@ def test_neuron_libs(lib="neurolab"):
         # 0 0 0 0
 
 
-def getIrisDB():
+def get_iris_db():
     def name2tuple(name):
         if name == "Iris-setosa":
             return (0, 0)
@@ -235,8 +235,8 @@ def getIrisDB():
 
         net_data = []
         for row in table:
-            name = row[4]
-            row = [float(elem) for elem in row[:4]]
+            name = row[-1]
+            row = [float(elem) for elem in row[:-1]]
 
             input = row
             expected = name2tuple(name)
@@ -265,7 +265,7 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
         success_rate = 0
         for data in test_data:
             results = net(data[0])
-            if all(abs(i - correct) < 0.2 for i, correct in zip(results, data[1])):
+            if all(abs(i - correct) < 0.5 for i, correct in zip(results, data[1])):
                 success_rate += 1
             if nb_tests == 1:
                 print(results, data[1])
@@ -275,7 +275,8 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
         progress_bar(i, nb_tests)
 
     total_success_rate /= nb_tests
-    print("\nNets trained: ", nb_tests)
+    print(train_func)
+    print("Nets trained: ", nb_tests)
     print("Success rate: ", total_success_rate * 100, " %")
     total_time = sum(time_per_train)
     print("Time: ", int(total_time) // 60, " min ", int(total_time) % 60, " sec")
@@ -283,11 +284,11 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
     return steps, time_per_train
 
 
-def plot_network_comparison(net_data, net_model, nb_tests):
+def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
     plt.figure()
     plt.title("Neural network training method comparison")
 
-    s, tt = test_network(net_data, net_model, net_gradient, nb_tests=nb_tests)
+    s, tt = test_network(net_data, net_model, net_gradient, nb_tests, test_data_length)
 
     # steps for gradient
     ax = plt.subplot2grid((2, 2), (0, 0))
@@ -306,7 +307,7 @@ def plot_network_comparison(net_data, net_model, nb_tests):
     ax.set(title="Time spent on learning- gradient", xlabel="attempt", ylabel="seconds")
     ax.grid(linestyle='--')
 
-    s, tt = test_network(net_data, net_model, net_genetic, nb_tests=nb_tests)
+    s, tt = test_network(net_data, net_model, net_genetic, nb_tests, test_data_length)
 
     # steps for genetic
     ax = plt.subplot2grid((2, 2), (1, 0))
@@ -324,3 +325,76 @@ def plot_network_comparison(net_data, net_model, nb_tests):
     ax.plot(tt)
     ax.set(title="Time spent on learning- genetic", xlabel="attempt", ylabel="seconds")
     ax.grid(linestyle='--')
+
+
+def test_iris(nb_tests=10):
+    """
+    That function just gather parameters I choose good in way of trail and fails process
+    """
+    net_data = get_iris_db()
+    net_model = [4, 5, 5, 2]
+    test_data_length = 5
+
+    # these do not work, you need to actually copy these to constants.py
+    # parameters for genetic
+    MAX_GENERATIONS = 100
+    POPULATION_SIZE = 8
+    MUTATION_CHANCE = 0.9
+    MUTATION_RATE = 0.2
+    # parameter for gradient
+    MAX_ITERATIONS = 200
+
+    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    plt.savefig("last_iris.png")
+
+
+def get_raisin_db():
+    def name2tuple(name):
+        if name == "Kecimen":
+            return [0]
+        elif name == "Besni":
+            return [1]
+
+    # stworzenie bazy danych
+    with open("Raisin_Dataset.arff") as file:
+        csvreader = csv.reader(file)
+
+        table = []
+        for row in csvreader:
+            table.append(row)
+
+        table = table[18:] # first lines are trash
+        table.pop()  # last one is empty array (eof I suppose)
+        random.shuffle(table)
+
+        net_data = []
+        for row in table:
+            name = row[-1]
+            row = [float(elem) for elem in row[:-1]]
+            row[0] /= 10
+            row[4] /= 10
+
+            input = row
+            expected = name2tuple(name)
+            net_data += [(input, expected)]
+    return net_data
+
+
+def test_raisin(nb_tests=10):
+    """
+    That function just gather parameters I choose good in way of trail and fails process
+    """
+    net_data = get_raisin_db()
+    net_model = [7, 5, 3, 1]
+    test_data_length = 30
+
+    # parameters for genetic
+    MAX_GENERATIONS = 100   # ???
+    POPULATION_SIZE = 21     # ???
+    MUTATION_CHANCE = 1   # ???
+    MUTATION_RATE = 0.4     # ???
+    # parameter for gradient
+    MAX_ITERATIONS = 1000    # ???
+
+    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    plt.savefig("last_raisin.png")
