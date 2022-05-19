@@ -245,10 +245,12 @@ def get_iris_db():
 
 
 def test_network(database, net_model, train_func, nb_tests=10, test_data_length=3):
+    print(train_func)
+
     # counting total time and succes rate on new data
     total_success_rate = 0.0
     time_per_train = []
-    steps = []
+    steps = None
 
     for i in range(nb_tests):
         # preparing data
@@ -258,7 +260,10 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
         net = Network(net_model, train_func)
         # training
         start = time.time()
-        steps = net.train(train_data)
+        if steps:
+            steps = [a+b/nb_tests for a, b in zip(steps, net.train(train_data))]
+        else:
+            steps = [a/nb_tests for a in net.train(train_data)]
         stop = time.time()
         time_per_train += [stop - start]
         # checking results
@@ -275,7 +280,7 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
         progress_bar(i, nb_tests)
 
     total_success_rate /= nb_tests
-    print(train_func)
+
     print("Nets trained: ", nb_tests)
     print("Success rate: ", total_success_rate * 100, " %")
     total_time = sum(time_per_train)
@@ -304,7 +309,7 @@ def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
 
     # steps for gradient
     top_left.plot(s)
-    top_left.set(title="Learn Error- gradient", xlabel="iteration", ylabel="average cost")
+    top_left.set(title="Av. Learn Error- gradient", xlabel="iteration", ylabel="average cost")
     # grid
     top_left.grid(linestyle='--', which="both")
     top_left.set_yticks(minor_ticks, minor=True)
@@ -319,13 +324,15 @@ def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
     if nb_tests > 1:
         top_right.plot(tt)
         top_right.set(title="Time spent on learning- gradient", xlabel="attempt", ylabel="seconds")
-        top_right.grid(linestyle='--')
+        # grid
+        top_right.grid(linestyle='--', which="both")
+        top_right.set_xticks(np.arange(nb_tests))
 
     s, tt = test_network(net_data, net_model, net_genetic, nb_tests, test_data_length)
 
     # steps for genetic
     bot_left.plot(s)
-    bot_left.set(title="Learn Error- genetic", xlabel="generation", ylabel="average cost")
+    bot_left.set(title="Av. Learn Error- genetic", xlabel="generation", ylabel="average cost")
     # grid
     bot_left.grid(linestyle='--', which="both")
     bot_left.set_yticks(minor_ticks, minor=True)
@@ -340,13 +347,17 @@ def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
     if nb_tests > 1:
         bot_right.plot(tt)
         bot_right.set(title="Time spent on learning- genetic", xlabel="attempt", ylabel="seconds")
-        bot_right.grid(linestyle='--')
+        # grid
+        bot_right.grid(linestyle='--', which="both")
+        bot_right.set_xticks(np.arange(nb_tests))
 
 
 def test_iris(nb_tests=10):
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
+    print("Testing Iris DB...")
+
     net_data = get_iris_db()
     net_model = [4, 5, 5, 2]
     test_data_length = 5
@@ -390,8 +401,12 @@ def get_raisin_db():
         for row in table:
             name = row[-1]
             row = [float(elem) for elem in row[:-1]]
-            row[0] /= 10
-            row[4] /= 10
+            # poprawianie do przedziału (0,1)
+            row[0] = row[0] / 235047
+            row[1] = row[1] / 1000
+            row[2] = row[2] / 493
+            row[4] = row[4] / 278217
+            row[6] = row[6] / 2700
 
             input = row
             expected = name2tuple(name)
@@ -403,20 +418,22 @@ def test_raisin(nb_tests=10):
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
+    print("Testing Raisin DB...")
+
     net_data = get_raisin_db()
     net_model = [7, 5, 3, 1]
     test_data_length = 30
 
     # parameters for genetic
     nparams = NConst.instance()
-    nparams.MAX_GENERATIONS = 100
-    nparams.POPULATION_SIZE = 21
-    nparams.MUTATION_CHANCE = 1
-    nparams.MUTATION_RATE = 0.4
+    nparams.MAX_GENERATIONS = 201
+    nparams.POPULATION_SIZE = 8
+    nparams.MUTATION_CHANCE = 0.9
+    nparams.MUTATION_RATE = 0.2
     # parameter for gradient
     gparams = GConst.instance()
-    gparams.MAX_ITERATIONS = 1000
-    gparams.BATCH_SIZE = 10
+    gparams.MAX_ITERATIONS = 501
+    gparams.BATCH_SIZE = 40
 
     plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
     plt.savefig("last_raisin.png")

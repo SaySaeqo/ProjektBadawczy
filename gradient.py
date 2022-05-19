@@ -8,7 +8,7 @@ from constants import *
 
 # dodać organizmy i będzie wprosty sposób done
 # Może dodać dokładność rozwiązania jako dodatkowy argument
-from utils import gradient, sigmoid_der
+from utils import gradient, sigmoid_der, progress_bar
 
 
 def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
@@ -145,5 +145,8 @@ def net_gradient(net, *args, **kwargs):
             steps += semi_step
         else:
             steps += [np.mean(semi_step)]
+
+        if params.MAX_ITERATIONS > 500:
+            progress_bar(iter, params.MAX_ITERATIONS)
 
     return steps
