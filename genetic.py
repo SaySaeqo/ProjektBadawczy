@@ -123,10 +123,7 @@ def net_genetic(net: Network, *args, **kwargs):
     # cost need to be minimal
     steps = []  # cost function values over iterations
 
-    # they are now in constants
-    # POPULATION_SIZE = 8
-    # MUTATION_CHANCE = 0.9
-    # MUTATION_RATE = 0.2
+    params = NConst.instance()
 
     # support for arguments type: list of tuples (input, ex_output)
     if len(args) == 1:
@@ -135,9 +132,9 @@ def net_genetic(net: Network, *args, **kwargs):
         inputs, ex_outputs = args
         args = list(zip(inputs, ex_outputs))
 
-    population = [Network(net.model_shape) for _ in range(POPULATION_SIZE)]
+    population = [Network(net.model_shape) for _ in range(params.POPULATION_SIZE)]
 
-    for iter in range(MAX_GENERATIONS):
+    for iter in range(params.MAX_GENERATIONS):
         semi_step = []
 
         def fitness(network):
@@ -157,11 +154,11 @@ def net_genetic(net: Network, *args, **kwargs):
 
         # crossover
         children = [copy.deepcopy(population[0])
-                    for _ in range(POPULATION_SIZE - 2 // 3)]
+                    for _ in range(params.POPULATION_SIZE - 2 // 3)]
         children += [copy.deepcopy(population[1])
-                     for _ in range((POPULATION_SIZE - 2) // 3)]
+                     for _ in range((params.POPULATION_SIZE - 2) // 3)]
         children += [network.average([population[0], population[1]])
-                     for _ in range((POPULATION_SIZE - 2) // 3)]
+                     for _ in range((params.POPULATION_SIZE - 2) // 3)]
 
         # mutation
         for individual in children:
@@ -170,22 +167,22 @@ def net_genetic(net: Network, *args, **kwargs):
 
                 for i in range(len(w)):
                     for j in range(len(w[i])):
-                        if random.random() < MUTATION_CHANCE:
-                            w[i][j] += random.uniform(-MUTATION_RATE, MUTATION_RATE)
+                        if random.random() < params.MUTATION_CHANCE:
+                            w[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
                 for i in range(len(b)):
                     for j in range(len(b[i])):
-                        if random.random() < MUTATION_CHANCE:
-                            b[i][j] += random.uniform(-MUTATION_RATE, MUTATION_RATE)
+                        if random.random() < params.MUTATION_CHANCE:
+                            b[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
 
-        population = population[:2] + children[:POPULATION_SIZE - 2]
+        population = population[:2] + children[:params.POPULATION_SIZE - 2]
 
         if kwargs.get("test_network_simple"):
             steps += semi_step
         else:
             steps += [np.mean(semi_step)]
 
-        if MAX_GENERATIONS > 200:
-            progress_bar(iter, MAX_GENERATIONS)
+        if params.MAX_GENERATIONS > 200:
+            progress_bar(iter, params.MAX_GENERATIONS)
 
         net.layers = population[0].layers
 

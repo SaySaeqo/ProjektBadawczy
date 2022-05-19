@@ -6,6 +6,7 @@ import testfunctions as tf
 from constants import *
 
 
+
 def progress_bar(current, max):
     """
     current/max [████████████████____]

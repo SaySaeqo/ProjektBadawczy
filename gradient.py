@@ -107,7 +107,7 @@ def net_gradient(net, *args, **kwargs):
     # cost need to be minimal
     steps = []  # cost function values over iterations
 
-    BATCH_SIZE = kwargs.get("batch_size", 10)
+    params = GConst.instance()
 
     # support for arguments type: list of tuples (input, ex_output)
     if len(args) == 1:
@@ -116,7 +116,7 @@ def net_gradient(net, *args, **kwargs):
         inputs, ex_outputs = args
         args = list(zip(inputs, ex_outputs))
 
-    for iter in range(MAX_ITERATIONS):
+    for iter in range(params.MAX_ITERATIONS):
         ders_buffer = []
         batch_count=0
         semi_step = []
@@ -133,7 +133,7 @@ def net_gradient(net, *args, **kwargs):
 
             # batching
             batch_count += 1
-            if batch_count >= BATCH_SIZE:
+            if batch_count >= params.BATCH_SIZE:
                 batch_count = 0
                 net -= average(ders_buffer)
                 ders_buffer.clear()

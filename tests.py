@@ -285,46 +285,54 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
 
 
 def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
-    plt.figure()
+
+    fig, ax = plt.subplots(2, 2) if nb_tests > 1 else plt.subplots(2,1)
     plt.title("Neural network training method comparison")
+    fig.tight_layout(pad=1.8)
+    if nb_tests > 1:
+        top_left = ax[0][0]
+        top_right = ax[0][1]
+        bot_left = ax[1][0]
+        bot_right = ax[1][1]
+    else:
+        top_left = ax[0]
+        bot_left = ax[1]
 
     s, tt = test_network(net_data, net_model, net_gradient, nb_tests, test_data_length)
 
     # steps for gradient
-    ax = plt.subplot2grid((2, 2), (0, 0))
-    ax.plot(s)
-    ax.set(title="Learn Error- gradient", xlabel="iteration", ylabel="average cost")
-    ax.grid(linestyle='--')
+    top_left.plot(s)
+    top_left.set(title="Learn Error- gradient", xlabel="iteration", ylabel="average cost")
+    top_left.grid(linestyle='--')
     # linia trendu
     domain = list(range(len(s)))
     z = numpy.polyfit(domain, s, 1)
     p = numpy.poly1d(z)
-    ax.plot(domain, p(domain), "r--")
+    top_left.plot(domain, p(domain), "r--")
 
     # time per train for gradient
-    ax = plt.subplot2grid((2, 2), (0, 1))
-    ax.plot(tt)
-    ax.set(title="Time spent on learning- gradient", xlabel="attempt", ylabel="seconds")
-    ax.grid(linestyle='--')
+    if nb_tests > 1:
+        top_right.plot(tt)
+        top_right.set(title="Time spent on learning- gradient", xlabel="attempt", ylabel="seconds")
+        top_right.grid(linestyle='--')
 
     s, tt = test_network(net_data, net_model, net_genetic, nb_tests, test_data_length)
 
     # steps for genetic
-    ax = plt.subplot2grid((2, 2), (1, 0))
-    ax.plot(s)
-    ax.set(title="Learn Error- genetic", xlabel="generation", ylabel="average cost")
-    ax.grid(linestyle='--')
+    bot_left.plot(s)
+    bot_left.set(title="Learn Error- genetic", xlabel="generation", ylabel="average cost")
+    bot_left.grid(linestyle='--')
     # linia trendu
     domain = list(range(len(s)))
     z = numpy.polyfit(domain, s, 1)
     p = numpy.poly1d(z)
-    ax.plot(domain, p(domain), "r--")
+    bot_left.plot(domain, p(domain), "r--")
 
     # time per train for gradient
-    ax = plt.subplot2grid((2, 2), (1, 1))
-    ax.plot(tt)
-    ax.set(title="Time spent on learning- genetic", xlabel="attempt", ylabel="seconds")
-    ax.grid(linestyle='--')
+    if nb_tests > 1:
+        bot_right.plot(tt)
+        bot_right.set(title="Time spent on learning- genetic", xlabel="attempt", ylabel="seconds")
+        bot_right.grid(linestyle='--')
 
 
 def test_iris(nb_tests=10):
@@ -337,12 +345,15 @@ def test_iris(nb_tests=10):
 
     # these do not work, you need to actually copy these to constants.py
     # parameters for genetic
-    MAX_GENERATIONS = 100
-    POPULATION_SIZE = 8
-    MUTATION_CHANCE = 0.9
-    MUTATION_RATE = 0.2
+    nparams = NConst.instance()
+    nparams.MAX_GENERATIONS = 200
+    nparams.POPULATION_SIZE = 8
+    nparams.MUTATION_CHANCE = 0.9
+    nparams.MUTATION_RATE = 0.2
     # parameter for gradient
-    MAX_ITERATIONS = 200
+    gparams = GConst.instance()
+    gparams.MAX_ITERATIONS = 200
+    gparams.BATCH_SIZE = 10
 
     plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
     plt.savefig("last_iris.png")
@@ -389,12 +400,15 @@ def test_raisin(nb_tests=10):
     test_data_length = 30
 
     # parameters for genetic
-    MAX_GENERATIONS = 100   # ???
-    POPULATION_SIZE = 21     # ???
-    MUTATION_CHANCE = 1   # ???
-    MUTATION_RATE = 0.4     # ???
+    nparams = NConst.instance()
+    nparams.MAX_GENERATIONS = 100
+    nparams.POPULATION_SIZE = 21
+    nparams.MUTATION_CHANCE = 1
+    nparams.MUTATION_RATE = 0.4
     # parameter for gradient
-    MAX_ITERATIONS = 1000    # ???
+    gparams = GConst.instance()
+    gparams.MAX_ITERATIONS = 1000
+    gparams.BATCH_SIZE = 10
 
     plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
     plt.savefig("last_raisin.png")
