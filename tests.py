@@ -297,13 +297,18 @@ def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
     else:
         top_left = ax[0]
         bot_left = ax[1]
+    major_ticks = np.arange(1.15, step=0.1)
+    minor_ticks = np.arange(1.1, step=0.05)
 
     s, tt = test_network(net_data, net_model, net_gradient, nb_tests, test_data_length)
 
     # steps for gradient
     top_left.plot(s)
     top_left.set(title="Learn Error- gradient", xlabel="iteration", ylabel="average cost")
-    top_left.grid(linestyle='--')
+    # grid
+    top_left.grid(linestyle='--', which="both")
+    top_left.set_yticks(minor_ticks, minor=True)
+    top_left.set_yticks(major_ticks)
     # linia trendu
     domain = list(range(len(s)))
     z = numpy.polyfit(domain, s, 1)
@@ -321,7 +326,10 @@ def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
     # steps for genetic
     bot_left.plot(s)
     bot_left.set(title="Learn Error- genetic", xlabel="generation", ylabel="average cost")
-    bot_left.grid(linestyle='--')
+    # grid
+    bot_left.grid(linestyle='--', which="both")
+    bot_left.set_yticks(minor_ticks, minor=True)
+    bot_left.set_yticks(major_ticks)
     # linia trendu
     domain = list(range(len(s)))
     z = numpy.polyfit(domain, s, 1)
@@ -346,7 +354,7 @@ def test_iris(nb_tests=10):
     # these do not work, you need to actually copy these to constants.py
     # parameters for genetic
     nparams = NConst.instance()
-    nparams.MAX_GENERATIONS = 200
+    nparams.MAX_GENERATIONS = 100
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2

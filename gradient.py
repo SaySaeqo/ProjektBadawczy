@@ -74,7 +74,7 @@ def computate_derivatives(net, input, ex_output):
     """
     # var to hold results to return
     ders_net = Network.create_empty(net.model_shape)
-    # computate values for each neuron
+    # compute values for each neuron
     net_output = net.process(input)
     # d_cost/d_value from net output
     net_output = np.matrix(net_output)
