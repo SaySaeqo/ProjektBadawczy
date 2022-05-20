@@ -137,48 +137,53 @@ def net_genetic(net: Network, *args, **kwargs):
     for iter in range(params.MAX_GENERATIONS):
         semi_step = []
 
-        def fitness(network):
-            costs = []
-            for input, ex_output in args:
-                output = network(input)
-                costs += [np.float_power(output - np.matrix(ex_output), 2)]
-            return np.mean(costs)
+        for batch_ptr in range(0, len(args), params.BATCH_SIZE):
+            inout = args[batch_ptr:batch_ptr+params.BATCH_SIZE]
 
-        # selection
+            def fitness(network):
+                costs = []
+                for input, ex_output in inout:
+                    output = network(input)
+                    costs += [np.float_power(output - np.matrix(ex_output), 2)]
+                return np.mean(costs)
 
-        # sorting by cost
+            # selection
 
-        population.sort(key=lambda a: fitness(a))
-        semi_step += [fitness(population[0])]  # smallest cost for statistics
+            # sorting by cost
+
+            population.sort(key=lambda a: fitness(a))
+            if kwargs.get("test_network_simple"):
+                steps += [fitness(population[0])]  # smallest cost for statistics
+            else:
+                semi_step += [fitness(population[0])]  # smallest cost for statistics
 
 
-        # crossover
-        children = [copy.deepcopy(population[0])
-                    for _ in range(params.POPULATION_SIZE - 2 // 3)]
-        children += [copy.deepcopy(population[1])
-                     for _ in range((params.POPULATION_SIZE - 2) // 3)]
-        children += [network.average([population[0], population[1]])
-                     for _ in range((params.POPULATION_SIZE - 2) // 3)]
+            # crossover
+            children = [copy.deepcopy(population[0])
+                        for _ in range(params.POPULATION_SIZE - 2 // 3)]
+            children += [copy.deepcopy(population[1])
+                         for _ in range((params.POPULATION_SIZE - 2) // 3)]
+            children += [network.average([population[0], population[1]])
+                         for _ in range((params.POPULATION_SIZE - 2) // 3)]
 
-        # mutation
-        for individual in children:
-            for layer in individual.layers:
-                w, b, _, _ = layer
+            # mutation
+            for individual in children:
+                for layer in individual.layers:
+                    w, b, _, _ = layer
 
-                for i in range(len(w)):
-                    for j in range(len(w[i])):
-                        if random.random() < params.MUTATION_CHANCE:
-                            w[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
-                for i in range(len(b)):
-                    for j in range(len(b[i])):
-                        if random.random() < params.MUTATION_CHANCE:
-                            b[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
+                    for i in range(len(w)):
+                        for j in range(len(w[i])):
+                            if random.random() < params.MUTATION_CHANCE:
+                                w[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
+                    for i in range(len(b)):
+                        for j in range(len(b[i])):
+                            if random.random() < params.MUTATION_CHANCE:
+                                b[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
 
-        population = population[:2] + children[:params.POPULATION_SIZE - 2]
+            population = population[:2] + children[:params.POPULATION_SIZE - 2]
 
-        if kwargs.get("test_network_simple"):
-            steps += semi_step
-        else:
+
+        if not kwargs.get("test_network_simple"):
             steps += [np.mean(semi_step)]
 
         if params.MAX_GENERATIONS > 200:

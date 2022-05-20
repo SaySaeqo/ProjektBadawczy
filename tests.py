@@ -369,6 +369,7 @@ def test_iris(nb_tests=10):
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2
+    nparams.BATCH_SIZE = 10
     # parameter for gradient
     gparams = GConst.instance()
     gparams.MAX_ITERATIONS = 200
@@ -430,6 +431,7 @@ def test_raisin(nb_tests=10):
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2
+    nparams.BATCH_SIZE = 40
     # parameter for gradient
     gparams = GConst.instance()
     gparams.MAX_ITERATIONS = 501
