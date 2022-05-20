@@ -186,7 +186,7 @@ def net_genetic(net: Network, *args, **kwargs):
         if not kwargs.get("test_network_simple"):
             steps += [np.mean(semi_step)]
 
-        if params.MAX_GENERATIONS > 200:
+        if params.MAX_GENERATIONS > 1:
             progress_bar(iter, params.MAX_GENERATIONS)
 
         net.layers = population[0].layers

@@ -5,7 +5,6 @@ from organism import *
 import numpy
 from constants import *
 
-
 # dodać organizmy i będzie wprosty sposób done
 # Może dodać dokładność rozwiązania jako dodatkowy argument
 from utils import gradient, sigmoid_der, progress_bar
@@ -63,6 +62,7 @@ def gradient_func(function, start, min_max=MIN,
 
     return start
 
+
 def computate_derivatives(net, input, ex_output):
     """
     Computates derivatives for single pair of output and expected output of net
@@ -94,6 +94,7 @@ def computate_derivatives(net, input, ex_output):
 
     return ders_net
 
+
 def net_gradient(net, *args, **kwargs):
     """
     Correct function for neural network. Uses **gradient** mechanics to upgrade network weights and biases.
@@ -117,36 +118,33 @@ def net_gradient(net, *args, **kwargs):
         args = list(zip(inputs, ex_outputs))
 
     for iter in range(params.MAX_ITERATIONS):
-        ders_buffer = []
-        batch_count=0
+        batch_count = 0
         semi_step = []
-        for input, ex_output in args:
-            # for debugging
-            input = np.matrix(input)
-            ex_output = np.matrix(ex_output)
-            cost = np.sum(np.float_power(net(input) - ex_output, 2))
-            semi_step += [cost]
 
-            # ders is Network object which contains derivatives for weights and biases
-            ders = computate_derivatives(net,input,ex_output)
-            ders_buffer += [ders]
+        for batch_ptr in range(0, len(args), params.BATCH_SIZE):
+            inout = args[batch_ptr:batch_ptr+params.BATCH_SIZE]
 
-            # batching
-            batch_count += 1
-            if batch_count >= params.BATCH_SIZE:
-                batch_count = 0
+            ders_buffer = []
+            for input, ex_output in inout:
+                # for debugging
+                input = np.matrix(input)
+                ex_output = np.matrix(ex_output)
+                cost = np.sum(np.float_power(net(input) - ex_output, 2))
+                semi_step += [cost]
+
+                # ders is Network object which contains derivatives for weights and biases
+                ders = computate_derivatives(net, input, ex_output)
+                ders_buffer += [ders]
+
+            if len(ders_buffer) > 0:
                 net -= average(ders_buffer)
-                ders_buffer.clear()
-
-        if len(ders_buffer) > 0:
-            net -= average(ders_buffer)
 
         if kwargs.get("test_network_simple"):
             steps += semi_step
         else:
             steps += [np.mean(semi_step)]
 
-        if params.MAX_ITERATIONS > 500:
+        if params.MAX_ITERATIONS > 1:
             progress_bar(iter, params.MAX_ITERATIONS)
 
     return steps
