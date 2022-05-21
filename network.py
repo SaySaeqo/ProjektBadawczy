@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from constants import *
 from utils import sigmoid, sigmoid_der
@@ -14,6 +16,7 @@ def average(networks_array):
     for network in networks_array:
         my_sum += network
     return my_sum / len(networks_array)
+
 
 class Network:
     """
@@ -43,6 +46,7 @@ class Network:
         """
         :param model_shape: array of layers' sizes, where size of array is number of layers,
             like [3, 5, 3] that means 3 layers, 1st has 3 neurons, 2nd - 5 neurons and 3rd - 3 neurons
+        :param correct_func: function which is used to train Network.
         """
         self.correct_func = correct_func
         self.model_shape = model_shape
@@ -88,10 +92,10 @@ class Network:
             layer[3] = np.transpose(v_prev @ w) + b
             v_prev = layer[2] = np.transpose(sigmoid(layer[3]))
 
-        return v_prev
+        return v_prev.tolist()[0]
 
-    def correct(self, inputs, expected_outputs):
-        return self.correct_func(self, inputs, expected_outputs)
+    def train(self, *args, **kwargs):
+        return self.correct_func(self, *args, **kwargs)
 
     def __repr__(self):
         return self.__str__()
@@ -108,10 +112,20 @@ class Network:
 
         :return: string like above
         """
-        return f"{self.layers}"
+        text = ""
+        for i in range(self.nb_layers):
+            text += f"-------LAYER {i + 1}-------\n"
+            text += f"WEIGHTS:\n{self.layers[i][0]}\n"
+            text += f"BIASES:\n{self.layers[i][1]}\n"
+            text += f"VALUES:\n{self.layers[i][2]}\n"
+        text += "---------END---------"
+        return text
 
     @classmethod
     def create_empty(cls, model_shape):
+        """
+        Creates Network with zeros instead of random values for biases and weights.
+        """
         return cls(model_shape, empty=True)
 
     def __iadd__(self, other):

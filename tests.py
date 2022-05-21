@@ -1,3 +1,7 @@
+import csv
+import random
+import time
+
 import neurolab as nl
 import numpy as np
 import torch
@@ -6,7 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from matplotlib import pyplot as plt
 
-from utils import Function
+from utils import Function, progress_bar, sigmoid
 from genetic import *
 from gradient import *
 from network import Network
@@ -93,16 +97,16 @@ def test_gradient_learnrate():
         print(i, ar, lowest)
 
 
-def test_neuron():
-    model = [3,5,5, 4]
-    net = Network(model, correct_func=net_gradient)
+def test_network_simple(correct_func):
+    model = [3, 5, 5, 4]
+    net = Network(model, correct_func=correct_func)
 
-    print (net)
+    print(net)
     inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
     targets = [[1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
-    steps = net.correct(inputs, targets)
-    #print(f"\r{i}/{N}", end="")
-    print("----------\nPO TRENINGU\n----------")
+    steps = net.train(inputs, targets, test_network_simple=True)
+    # print(f"\r{i}/{N}", end="")
+    print("-*-*-*-*-*-*-*-*-*-\nPO TRENINGU\n-*-*-*-*-*-*-*-*-*-")
     print(net)
     #                          oczekiwane wyniki:
     print(net.process([0.0, 0.0, 0.0]))  # 1 1 1 1
@@ -119,6 +123,7 @@ def test_neuron():
     plt.plot(steps[1:-3:4])
     plt.plot(steps[2:-2:4])
     plt.plot(steps[3:-1:4])
+    plt.title(str(correct_func))
     plt.legend(["000->1111", "010->1011", "011->1100", "111->0000"])
     plt.xlabel("iterations")
     plt.ylabel("cost")
@@ -154,6 +159,7 @@ def test_neuron_libs(lib="neurolab"):
         # 0 0 0 0
     elif lib == "pytorch":
         print("PYTORCH LIBRARY\n")
+
         # https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
         class Net(nn.Module):
 
@@ -187,7 +193,7 @@ def test_neuron_libs(lib="neurolab"):
 
         # create your optimizer
         optimizer = optim.SGD(net.parameters(), lr=0.01)
-        N = 2**15
+        N = 2 ** 15
         for i in range(N):
             # training
             optimizer.zero_grad()  # zero the gradient buffers
@@ -205,3 +211,229 @@ def test_neuron_libs(lib="neurolab"):
         # 1 0 1 1
         # 1 1 0 0
         # 0 0 0 0
+
+
+def get_iris_db():
+    def name2tuple(name):
+        if name == "Iris-setosa":
+            return (0, 0)
+        elif name == "Iris-versicolor":
+            return (0, 1)
+        elif name == "Iris-virginica":
+            return (1, 1)
+
+    # stworzenie bazy danych
+    with open("iris.data") as file:  # Przez cb 3 małe kotki umarły, bo nie zamykałeś pliku
+        csvreader = csv.reader(file)
+
+        table = []
+        for row in csvreader:
+            table.append(row)
+
+        table.pop()  # last one is empty array (eof I suppose)
+        random.shuffle(table)
+
+        net_data = []
+        for row in table:
+            name = row[-1]
+            row = [float(elem) for elem in row[:-1]]
+
+            input = row
+            expected = name2tuple(name)
+            net_data += [(input, expected)]
+    return net_data
+
+
+def test_network(database, net_model, train_func, nb_tests=10, test_data_length=3):
+    print(train_func)
+
+    # counting total time and succes rate on new data
+    total_success_rate = 0.0
+    time_per_train = []
+    steps = None
+
+    for i in range(nb_tests):
+        # preparing data
+        random.shuffle(database)
+        test_data = database[-test_data_length:]
+        train_data = database[:-test_data_length]
+        net = Network(net_model, train_func)
+        # training
+        start = time.time()
+        if steps:
+            steps = [a+b/nb_tests for a, b in zip(steps, net.train(train_data))]
+        else:
+            steps = [a/nb_tests for a in net.train(train_data)]
+        stop = time.time()
+        time_per_train += [stop - start]
+        # checking results
+        success_rate = 0
+        for data in test_data:
+            results = net(data[0])
+            if all(abs(i - correct) < 0.5 for i, correct in zip(results, data[1])):
+                success_rate += 1
+            if nb_tests == 1:
+                print(results, data[1])
+        success_rate /= len(test_data)
+        total_success_rate += success_rate
+        # printing progress
+        progress_bar(i, nb_tests)
+
+    total_success_rate /= nb_tests
+
+    print("Nets trained: ", nb_tests)
+    print("Success rate: ", total_success_rate * 100, " %")
+    total_time = sum(time_per_train)
+    print("Time: ", int(total_time) // 60, " min ", int(total_time) % 60, " sec")
+
+    return steps, time_per_train
+
+
+def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
+
+    fig, ax = plt.subplots(2, 2) if nb_tests > 1 else plt.subplots(2,1)
+    plt.title("Neural network training method comparison")
+    fig.tight_layout(pad=1.8)
+    if nb_tests > 1:
+        top_left = ax[0][0]
+        top_right = ax[0][1]
+        bot_left = ax[1][0]
+        bot_right = ax[1][1]
+    else:
+        top_left = ax[0]
+        bot_left = ax[1]
+    major_ticks = np.arange(1.15, step=0.1)
+    minor_ticks = np.arange(1.1, step=0.05)
+
+    s, tt = test_network(net_data, net_model, net_gradient, nb_tests, test_data_length)
+
+    # steps for gradient
+    top_left.plot(s)
+    top_left.set(title="Av. Learn Error- gradient", xlabel="iteration", ylabel="average cost")
+    # grid
+    top_left.grid(linestyle='--', which="both")
+    top_left.set_yticks(minor_ticks, minor=True)
+    top_left.set_yticks(major_ticks)
+    # linia trendu
+    domain = list(range(len(s)))
+    z = numpy.polyfit(domain, s, 1)
+    p = numpy.poly1d(z)
+    top_left.plot(domain, p(domain), "r--")
+
+    # time per train for gradient
+    if nb_tests > 1:
+        top_right.plot(tt)
+        top_right.set(title="Time spent on learning- gradient", xlabel="attempt", ylabel="seconds")
+        # grid
+        top_right.grid(linestyle='--', which="both")
+        top_right.set_xticks(np.arange(nb_tests))
+
+    s, tt = test_network(net_data, net_model, net_genetic, nb_tests, test_data_length)
+
+    # steps for genetic
+    bot_left.plot(s)
+    bot_left.set(title="Av. Learn Error- genetic", xlabel="generation", ylabel="average cost")
+    # grid
+    bot_left.grid(linestyle='--', which="both")
+    bot_left.set_yticks(minor_ticks, minor=True)
+    bot_left.set_yticks(major_ticks)
+    # linia trendu
+    domain = list(range(len(s)))
+    z = numpy.polyfit(domain, s, 1)
+    p = numpy.poly1d(z)
+    bot_left.plot(domain, p(domain), "r--")
+
+    # time per train for gradient
+    if nb_tests > 1:
+        bot_right.plot(tt)
+        bot_right.set(title="Time spent on learning- genetic", xlabel="attempt", ylabel="seconds")
+        # grid
+        bot_right.grid(linestyle='--', which="both")
+        bot_right.set_xticks(np.arange(nb_tests))
+
+
+def test_iris(nb_tests=10):
+    """
+    That function just gather parameters I choose good in way of trail and fails process
+    """
+    print("Testing Iris DB...")
+
+    net_data = get_iris_db()
+    net_model = [4, 5, 5, 2]
+    test_data_length = 5
+
+    # these do not work, you need to actually copy these to constants.py
+    # parameters for genetic
+    nparams = NConst.instance()
+    nparams.MAX_GENERATIONS = 100
+    nparams.POPULATION_SIZE = 8
+    nparams.MUTATION_CHANCE = 0.9
+    nparams.MUTATION_RATE = 0.2
+    # parameter for gradient
+    gparams = GConst.instance()
+    gparams.MAX_ITERATIONS = 200
+    gparams.BATCH_SIZE = 10
+
+    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    plt.savefig("last_iris.png")
+
+
+def get_raisin_db():
+    def name2tuple(name):
+        if name == "Kecimen":
+            return [0]
+        elif name == "Besni":
+            return [1]
+
+    # stworzenie bazy danych
+    with open("Raisin_Dataset.arff") as file:
+        csvreader = csv.reader(file)
+
+        table = []
+        for row in csvreader:
+            table.append(row)
+
+        table = table[18:] # first lines are trash
+        table.pop()  # last one is empty array (eof I suppose)
+        random.shuffle(table)
+
+        net_data = []
+        for row in table:
+            name = row[-1]
+            row = [float(elem) for elem in row[:-1]]
+            # poprawianie do przedziału (0,1)
+            row[0] = row[0] / 235047
+            row[1] = row[1] / 1000
+            row[2] = row[2] / 493
+            row[4] = row[4] / 278217
+            row[6] = row[6] / 2700
+
+            input = row
+            expected = name2tuple(name)
+            net_data += [(input, expected)]
+    return net_data
+
+
+def test_raisin(nb_tests=10):
+    """
+    That function just gather parameters I choose good in way of trail and fails process
+    """
+    print("Testing Raisin DB...")
+
+    net_data = get_raisin_db()
+    net_model = [7, 5, 3, 1]
+    test_data_length = 30
+
+    # parameters for genetic
+    nparams = NConst.instance()
+    nparams.MAX_GENERATIONS = 201
+    nparams.POPULATION_SIZE = 8
+    nparams.MUTATION_CHANCE = 0.9
+    nparams.MUTATION_RATE = 0.2
+    # parameter for gradient
+    gparams = GConst.instance()
+    gparams.MAX_ITERATIONS = 501
+    gparams.BATCH_SIZE = 40
+
+    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    plt.savefig("last_raisin.png")

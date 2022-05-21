@@ -1,8 +1,8 @@
-import network
 from tests import *
 
-#test_algorithms()
+# test_network_simple(net_gradient)
+# test_network_simple(net_genetic)
 
-test_neuron()
-# test_neuron_libs("neurolab")
-# test_neuron_libs("pytorch")
+# test_iris(2)
+test_raisin(1) # still testing with parameters
+plt.show()
