@@ -22,6 +22,7 @@ class NConst:
     POPULATION_SIZE = 8
     MUTATION_CHANCE = 0.9
     MUTATION_RATE = 0.2
+    BATCH_SIZE = 10
 
 
 @Singleton

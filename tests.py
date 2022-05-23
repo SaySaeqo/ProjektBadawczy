@@ -261,9 +261,9 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
         # training
         start = time.time()
         if steps:
-            steps = [a+b/nb_tests for a, b in zip(steps, net.train(train_data))]
+            steps = [a + b / nb_tests for a, b in zip(steps, net.train(train_data))]
         else:
-            steps = [a/nb_tests for a in net.train(train_data)]
+            steps = [a / nb_tests for a in net.train(train_data)]
         stop = time.time()
         time_per_train += [stop - start]
         # checking results
@@ -290,8 +290,7 @@ def test_network(database, net_model, train_func, nb_tests=10, test_data_length=
 
 
 def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
-
-    fig, ax = plt.subplots(2, 2) if nb_tests > 1 else plt.subplots(2,1)
+    fig, ax = plt.subplots(2, 2) if nb_tests > 1 else plt.subplots(2, 1)
     plt.title("Neural network training method comparison")
     fig.tight_layout(pad=1.8)
     if nb_tests > 1:
@@ -365,13 +364,14 @@ def test_iris(nb_tests=10):
     # these do not work, you need to actually copy these to constants.py
     # parameters for genetic
     nparams = NConst.instance()
-    nparams.MAX_GENERATIONS = 100
+    nparams.MAX_GENERATIONS = 50
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2
+    nparams.BATCH_SIZE = 10
     # parameter for gradient
     gparams = GConst.instance()
-    gparams.MAX_ITERATIONS = 200
+    gparams.MAX_ITERATIONS = 100
     gparams.BATCH_SIZE = 10
 
     plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
@@ -393,7 +393,7 @@ def get_raisin_db():
         for row in csvreader:
             table.append(row)
 
-        table = table[18:] # first lines are trash
+        table = table[18:]  # first lines are trash
         table.pop()  # last one is empty array (eof I suppose)
         random.shuffle(table)
 
@@ -421,19 +421,93 @@ def test_raisin(nb_tests=10):
     print("Testing Raisin DB...")
 
     net_data = get_raisin_db()
-    net_model = [7, 5, 3, 1]
+    net_model = [7, 5, 2, 1]
     test_data_length = 30
 
     # parameters for genetic
     nparams = NConst.instance()
-    nparams.MAX_GENERATIONS = 201
+    nparams.MAX_GENERATIONS = 10
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2
+    nparams.BATCH_SIZE = 15
     # parameter for gradient
     gparams = GConst.instance()
-    gparams.MAX_ITERATIONS = 501
-    gparams.BATCH_SIZE = 40
+    gparams.MAX_ITERATIONS = 25
+    gparams.BATCH_SIZE = 3
 
     plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
     plt.savefig("last_raisin.png")
+
+
+def get_beans_db():
+    def name2tuple(name):
+        if name == "SEKER":
+            return (0, 0, 0)
+        elif name == "BARBUNYA":
+            return (0, 0, 1)
+        elif name == "BOMBAY":
+            return (0, 1, 0)
+        elif name == "CALI":
+            return (0, 1, 1)
+        elif name == "DERMASON":
+            return (1, 0, 0)
+        elif name == "HOROZ":
+            return (1, 0, 1)
+        elif name == "SIRA":
+            return (1, 1, 0)
+
+    # stworzenie bazy danych
+    with open("Dry_Bean_Dataset.arff") as file:
+        csvreader = csv.reader(file)
+
+        table = []
+        for row in csvreader:
+            table.append(row)
+
+        table = table[25:]  # first lines are trash
+        table.pop()  # last one is empty array (eof I suppose)
+        random.shuffle(table)
+
+        net_data = []
+        for row in table:
+            name = row[-1]
+            row = [float(elem) for elem in row[:-1]]
+            # poprawianie do przedziału (0,1)
+            row[0] = row[0] / 254616
+            row[1] = row[1] / 1986
+            row[2] = row[2] / 739
+            row[3] = row[3] / 462
+            row[4] = row[4] / 2.5
+            row[6] = row[6] / 263261
+
+            input = row
+            expected = name2tuple(name)
+            net_data += [(input, expected)]
+    return net_data
+
+
+def test_beans(nb_tests=10):
+    """
+    That function just gather parameters I choose good in way of trail and fails process
+    """
+    print("Testing Beans DB...")
+
+    net_data = get_beans_db()
+    net_model = [16, 10, 6, 3]
+    test_data_length = 1000
+
+    # parameters for genetic
+    nparams = NConst.instance()
+    nparams.MAX_GENERATIONS = 10
+    nparams.POPULATION_SIZE = 12
+    nparams.MUTATION_CHANCE = 0.8
+    nparams.MUTATION_RATE = 0.2
+    nparams.BATCH_SIZE = 50
+    # parameter for gradient
+    gparams = GConst.instance()
+    gparams.MAX_ITERATIONS = 10
+    gparams.BATCH_SIZE = 8
+
+    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    plt.savefig("last_beans.png")
