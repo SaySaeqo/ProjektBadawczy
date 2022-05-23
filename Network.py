@@ -24,7 +24,7 @@ class network:
     correct_function
     '''
 
-    def __init__(self, nrn_nmb, correct_function, batch_size):
+    def __init__(self, nrn_nmb, correct_function, batch_size, learnBase = 10 , fractionLearnRate= 3/4, learnSuppresion = 1):
         """
         :param nrn_nmb: neurons number per layer, czytając od lewej
         :param correct_function: funkcja ucząca/poprawiająca sieć
@@ -41,6 +41,10 @@ class network:
         self.batch_iteration = 0
         self.batch_matrix_grad = self.create_zero_matrices_batch()
         self.batch_bias_grad = self.create_zero_biases_batch()
+        self.learnBase = learnBase
+        self.fractionLearnRate = fractionLearnRate
+        self.learnCounter = 1
+        self.learnSuppresion = learnSuppresion
 
         # utworzenie tablicy macierzy wag
         matrix = self.create_X_matrix(nrn_nmb[0], 1)
@@ -87,8 +91,16 @@ class network:
 
         #batchowanie
         for i in range(1, self.layers):
+            #matrices_der[i] = nmp.multiply(matrices_der[i], self.learnBase * ( 1 / self.learnCounter) ** self.learnSuppresion)  # skalowanie z learnratem
+            matrices_der[i] = nmp.multiply(matrices_der[i], self.learnBase * (self.fractionLearnRate) ** (self.learnCounter/self.learnSuppresion) ) # skalowanie z learnratem
+            #biases_der[i] = nmp.multiply(biases_der[i], self.learnBase * (1 / self.learnCounter) ** self.learnSuppresion)  # skalowanie z learnratem
+            biases_der[i] = nmp.multiply(biases_der[i],  self.learnBase * (self.fractionLearnRate) ** (self.learnCounter/self.learnSuppresion))  # skalowanie z learnratem
+
+
             self.batch_matrix_grad[i] = nmp.add(self.batch_matrix_grad[i], matrices_der[i])
+
             self.batch_bias_grad[i] = nmp.add(self.batch_bias_grad[i], biases_der[i])
+
 
 
         #update wag po zapełnieniu batchu
@@ -105,6 +117,8 @@ class network:
                 for val in layer:
                     val = val / self.batch_size # uśrednianie
 
+
+
             for i in range(1, self.layers):
                 self.matrices[i] = nmp.subtract(self.matrices[i], self.batch_matrix_grad[i])
                 self.biases[i] = nmp.subtract(self.biases[i],  self.batch_bias_grad[i])
@@ -113,6 +127,7 @@ class network:
             self.batch_bias_grad = self.create_zero_biases_batch()
             self.batch_iteration = 0
 
+        self.learnCounter += 1
         return matrices_der, biases_der
 
     def asses(self, expected_result):
@@ -208,9 +223,10 @@ class geneticNetwork(network):
     net_numb ich liczbe
     '''
 
-    def __init__(self, nrn_nmb, net_numb, batch_size):
+    def __init__(self, nrn_nmb,correct_function, net_numb, batch_size, learnBase = 10 , fractionLearnRate= 3/4, learnSuppresion = 1):
         self.learning = False
         self.net_numb = net_numb
+        self.correct_function = correct_function
         self.nets = [None] * net_numb
         self.args = []
         self.nrn_nmb = nrn_nmb
@@ -218,6 +234,10 @@ class geneticNetwork(network):
         self.last_args = []
         self.last_expected = []
         self.batch_size=batch_size
+        self.learnBase = learnBase
+        self.fractionLearnRate = fractionLearnRate
+        self.learnCounter = 1
+        self.learnSuppresion = learnSuppresion
 
         for i in range(net_numb):
             self.nets[i] = network(nrn_nmb, None, batch_size)
@@ -247,14 +267,19 @@ class geneticNetwork(network):
 
     def radius_cross(self, net1, net2):
         net = copy.deepcopy(net1)
+        #matrices_der, biases_der = self.correct_function(net.neuron_values, self.expected_result, net1)
 
         for layer in range(1, net1.layers):
             for row in range(len(net1.matrices[layer])):
                 for col in range(len(net1.matrices[layer][row])):
                     distance = abs(net1.matrices[layer][row][col] - net2.matrices[layer][row][col])
-                    net1.matrices[layer][row][col] += random.uniform(-1, 1) * distance
+                    net.matrices[layer][row][col] += random.uniform(-1, 1) * distance
+                    #net.matrices[layer][row][col] += random.uniform(-1, 1) * distance * matrices_der[layer][row][col]
+                    #net.matrices[layer][row][col] += distance * random.uniform(-1, 1)  * self.learnBase * (self.fractionLearnRate) ** (self.learnCounter/self.learnSuppresion)
                 distance = abs(net1.biases[layer][row] - net2.biases[layer][row])
-                net1.biases[layer][row] += random.uniform(-1, 1) * distance
+                net.biases[layer][row] += random.uniform(-1, 1) * distance
+                #net.biases[layer][row] += random.uniform(-1, 1) * distance * biases_der[layer][row]
+                #net.biases[layer][row] += distance * random.uniform(-1, 1) * self.learnBase * (self.fractionLearnRate) ** (self.learnCounter/self.learnSuppresion)
 
         return net
 
@@ -333,7 +358,7 @@ class geneticNetwork(network):
 
         self.expected_result = expected_result
 
-        prev_best = self.nets[:5]
+        prev_best = copy.deepcopy(self.nets[:2]) #tutaj był najpewniej błąd referencyjny
 
         # wpierw symulowanie każdej sieci
         #for net in self.nets:
@@ -349,9 +374,10 @@ class geneticNetwork(network):
         self.nets = self.select_best(all)
 
         self.last_expected.append(expected_result)
-        self.last_expected=self.last_expected[:self.batch_size]
         self.last_args.append(self.args)
-        self.last_args = self.last_args[:self.batch_size]
+        if(len(self.last_expected) == self.batch_size+1):
+            self.last_expected=self.last_expected[1:self.batch_size]
+            self.last_args = self.last_args[1:self.batch_size]
 
 
     def total_error(self, input, expected_result):
