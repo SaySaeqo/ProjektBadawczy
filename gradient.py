@@ -144,7 +144,7 @@ def net_gradient(net, *args, **kwargs):
         else:
             steps += [np.mean(semi_step)]
 
-        if params.MAX_ITERATIONS > 1:
+        if params.MAX_ITERATIONS > 500:
             progress_bar(iter, params.MAX_ITERATIONS)
 
     return steps
