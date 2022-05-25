@@ -17,15 +17,15 @@ MAX_GENERATIONS = MAX_ITERATIONS = 200  # ?? nie używam już
 
 
 @Singleton
-class NConst:
-    MAX_GENERATIONS = 10
-    POPULATION_SIZE = 8
-    MUTATION_CHANCE = 0.9
-    MUTATION_RATE = 0.2
-    BATCH_SIZE = 10
+class GeneticConst:
+    MAX_GENERATIONS = 150
+    POPULATION_SIZE = 30
+    MUTATION_CHANCE = 0.2
+    MUTATION_RATE = 0.5
+    BATCH_SIZE = 50
 
 
 @Singleton
-class GConst:
+class GradientConst:
     MAX_ITERATIONS = 200
     BATCH_SIZE = 10

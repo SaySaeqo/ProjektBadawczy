@@ -102,13 +102,13 @@ def net_gradient(net, *args, **kwargs):
     :param inputs: list of network's inputs
         (when single input for network is a list, then it is list of lists)
     :param expected_outputs: list of expected outputs for each network's inputs in previous argument
-    :return: void
+    :return: list of average cost function on all inputs per generation
     """
 
     # cost need to be minimal
     steps = []  # cost function values over iterations
 
-    params = GConst.instance()
+    params = GradientConst.instance()
 
     # support for arguments type: list of tuples (input, ex_output)
     if len(args) == 1:

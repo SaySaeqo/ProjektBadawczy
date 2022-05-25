@@ -1,8 +1,9 @@
+import copy
 import random
 
 import numpy as np
 from constants import *
-from utils import sigmoid, sigmoid_der
+from utils import sigmoid, sigmoid_der, progress_bar
 
 
 def average(networks_array):
@@ -151,3 +152,46 @@ class Network:
             result_layer[0] = w / other
             result_layer[1] = b / other
         return result
+
+
+class WLTNetwork(Network):
+    def __init__(self, model_shape, correct_func=None, empty=False):
+        super().__init__(model_shape, correct_func, empty)
+        self.activation_genome = [1 for _ in range(sum(model_shape))]
+        model_shape_shifted = ([0] + model_shape)[:-1]
+        weights = [np.ones((nb_neur_prev, nb_neur_cur))
+                   for nb_neur_prev, nb_neur_cur in zip(model_shape_shifted, model_shape)]
+        self.weights_genome = weights
+
+    def process(self, args):
+        """
+        Activate network to compute results from args.
+        All activation values from all neurons all stored in values parameter.
+
+        :param args: collection of arguments in number of 1st layer size
+        :return: collection of results in number of last layer size
+        """
+
+        # activation genome handlers
+        curr_gen = 0
+        gen_length = 0
+
+        # turn on the net
+        first = True
+        v_prev = None
+        for layer, weights_genome_layer in zip(self.layers,self.weights_genome):
+            gen_length = layer[0].size
+
+            if first:
+                v_prev = layer[2] = np.matrix(args)
+                curr_gen += gen_length
+                first = False
+                continue
+
+            w, b, v, z = layer
+            w = np.multiply(w, weights_genome_layer)
+            layer[3] = np.transpose(v_prev @ w) + b
+            v_prev = layer[2] = np.transpose(sigmoid(layer[3]))
+            curr_gen += gen_length
+
+        return v_prev.tolist()[0]

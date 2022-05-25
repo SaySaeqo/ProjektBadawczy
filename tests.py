@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from utils import Function, progress_bar, sigmoid
 from genetic import *
 from gradient import *
-from network import Network
+from network import Network, WLTNetwork
 
 
 def get_algorithm(index):
@@ -363,14 +363,14 @@ def test_iris(nb_tests=10):
 
     # these do not work, you need to actually copy these to constants.py
     # parameters for genetic
-    nparams = NConst.instance()
+    nparams = GeneticConst.instance()
     nparams.MAX_GENERATIONS = 50
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2
     nparams.BATCH_SIZE = 10
     # parameter for gradient
-    gparams = GConst.instance()
+    gparams = GradientConst.instance()
     gparams.MAX_ITERATIONS = 100
     gparams.BATCH_SIZE = 10
 
@@ -425,14 +425,14 @@ def test_raisin(nb_tests=10):
     test_data_length = 30
 
     # parameters for genetic
-    nparams = NConst.instance()
+    nparams = GeneticConst.instance()
     nparams.MAX_GENERATIONS = 10
     nparams.POPULATION_SIZE = 8
     nparams.MUTATION_CHANCE = 0.9
     nparams.MUTATION_RATE = 0.2
     nparams.BATCH_SIZE = 15
     # parameter for gradient
-    gparams = GConst.instance()
+    gparams = GradientConst.instance()
     gparams.MAX_ITERATIONS = 25
     gparams.BATCH_SIZE = 3
 
@@ -462,8 +462,8 @@ def get_beans_db():
         csvreader = csv.reader(file)
 
         table = []
-        for row in csvreader:
-            table.append(row)
+        for input in csvreader:
+            table.append(input)
 
         table = table[25:]  # first lines are trash
         table.pop()  # last one is empty array (eof I suppose)
@@ -472,16 +472,15 @@ def get_beans_db():
         net_data = []
         for row in table:
             name = row[-1]
-            row = [float(elem) for elem in row[:-1]]
+            input = [float(elem) for elem in row[:-1]]
             # poprawianie do przedziału (0,1)
-            row[0] = row[0] / 254616
-            row[1] = row[1] / 1986
-            row[2] = row[2] / 739
-            row[3] = row[3] / 462
-            row[4] = row[4] / 2.5
-            row[6] = row[6] / 263261
+            input[0] = input[0] / 254616
+            input[1] = input[1] / 1986
+            input[2] = input[2] / 739
+            input[3] = input[3] / 462
+            input[4] = input[4] / 2.5
+            input[6] = input[6] / 263261
 
-            input = row
             expected = name2tuple(name)
             net_data += [(input, expected)]
     return net_data
@@ -498,14 +497,14 @@ def test_beans(nb_tests=10):
     test_data_length = 1000
 
     # parameters for genetic
-    nparams = NConst.instance()
+    nparams = GeneticConst.instance()
     nparams.MAX_GENERATIONS = 10
     nparams.POPULATION_SIZE = 12
     nparams.MUTATION_CHANCE = 0.8
     nparams.MUTATION_RATE = 0.2
     nparams.BATCH_SIZE = 50
     # parameter for gradient
-    gparams = GConst.instance()
+    gparams = GradientConst.instance()
     gparams.MAX_ITERATIONS = 10
     gparams.BATCH_SIZE = 8
 
