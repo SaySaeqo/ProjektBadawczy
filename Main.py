@@ -19,22 +19,19 @@ from re import sub
 #PlotIris("iris_genetic_time_comparison")
 #PlotIris("test_gradient")
 #PlotIris("test_genetic")
+#PlotIris("test_mix")
 #PlotIris("test_generalism")
-
-#PlotBeans("beans_single_try")
-#PlotBeans("beans_genetic_learn_many_attempts")
-#PlotBeans("test_gradient")
-#PlotBeans("test_generalism")
 
 #PlotRisin("risin_single_try")
 #PlotRisin("test_generalism")
 #PlotRisin("risin_time_comparison")
 #PlotRisin("test_gradient")
 #PlotRisin("test_genetic")
+PlotRisin("test_mix")
 
 
 #PlotMusk("musk_single_try")
-PlotMusk("test_generalism")
+#PlotMusk("test_generalism")
 #PlotMusk("risin_time_comparison")
 #PlotMusk("test_gradient")
 #PlotMusk("test_genetic")

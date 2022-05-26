@@ -12,8 +12,25 @@ import matplotlib.pyplot as plt
 from Functions import get_function
 from Genetic_Algorithms import *
 from Gradient_Algorithm import *
-from Network import *
+from Mix_Network import *
 import collections
+
+
+def Compare_lists(a, b):
+    if len(a) == len(b):
+        for i in range(len(a)):
+            if a[i] != b[i]:
+                return False
+        return True
+    else:
+        return False
+
+
+def ParseOutpus(list):
+    for i in range(len(list)):
+        list[i] = round(list[i])
+    return list
+
 
 def get_algorithm(index):
     '''
@@ -369,7 +386,7 @@ def PlotIris(option):
         plt.show()
 
     if option == "test_gradient":
-        LOOPS = 20
+        LOOPS = 10
         net_normal = network([4, 3, 3, 3], net_gradient,1, learnBase = 8 ,fractionLearnRate=3/4, learnSuppresion = 200)
         error= []
         # tutaj operujemy na input i expected
@@ -432,20 +449,6 @@ def PlotIris(option):
 
 
     if option == "test_generalism":
-        def Compare_lists(a,b):
-            if len(a)==len(b):
-                for i in range(len(a)):
-                    if a[i] != b[i]:
-                        return False
-                return True
-            else:
-                return False
-
-        def ParseOutpus(list):
-            for i in range(len(list)):
-                list[i]=round(list[i])
-            return list
-
 
         LOOPS = 10
         LEARNING_LOOPS = 10
@@ -506,6 +509,46 @@ def PlotIris(option):
         p = numpy.poly1d(z)
         plot2.plot(domain, p(domain), "r--")
         plt.show()
+
+    if option == "test_mix":
+        LOOPS = 15
+        mix_net = mixNetwork([4, 3, 3, 3],net_gradient, 25,30,2,input,expected,50, learnBase = 4 ,fractionLearnRate=3/4, learnSuppresion = 400)
+        error_genetic = []
+        accuracy_mix = []
+        domain = range(1, ROWS * LOOPS + 1,10)
+        # tutaj operujemy na input i expected
+        mix_net.start_learning()
+        for j in range(LOOPS):
+            for i in range(ROWS):
+                mix_net.process(net_data[i][0])
+                mix_net.correct(net_data[i][1])
+                if (j*ROWS +i) in domain:
+                    error_genetic.append(mix_net.total_error(input, expected))
+                    gradient_hits = 0
+                    for k in range(ROWS):
+                        otp = ParseOutpus(mix_net.process(net_data[k][0]))
+                        if Compare_lists(otp, net_data[k][1]):
+                            gradient_hits += 1
+                    accuracy_mix.append(gradient_hits)
+                print(j, i)
+        mix_net.stop_learning()
+
+        # plt.plot(range(150), error_normal, label="oś x")
+        plt.plot((1, 1), (1, 0))
+        plt.plot(domain, error_genetic, label="price")
+        plt.plot(domain, accuracy_mix, label="hits")
+        plt.xlabel("iteration")
+        plt.ylabel("total error")
+        plt.title("Learnig curve - mix - batch size 5")
+        # linia trendu \/
+        z = numpy.polyfit(domain, error_genetic, 1)
+        p = numpy.poly1d(z)
+        plt.plot(domain, p(domain), "r--")
+        plt.show()
+
+        for i in range(ROWS):
+            print(mix_net.process(net_data[i][0]), net_data[i][1])
+
 
 def PlotBeans(option):
     ROWS = 13611 #nadpisuje, bo dla większej liczby to trwa wieki XD
@@ -834,19 +877,6 @@ def PlotRisin(option):
             print(net.process(net_data[i][0]), net_data[i][1])
 
     if option == "test_generalism":
-        def Compare_lists(a,b):
-            if len(a)==len(b):
-                for i in range(len(a)):
-                    if a[i] != b[i]:
-                        return False
-                return True
-            else:
-                return False
-
-        def ParseOutpus(list):
-            for i in range(len(list)):
-                list[i]=round(list[i])
-            return list
 
         LOOPS = 2
         LEARNING_LOOPS = 6
@@ -1020,7 +1050,45 @@ def PlotRisin(option):
         for i in range(ROWS):
             print(net.process(net_data[i][0]), net_data[i][1])
 
+    if option == "test_mix":
+        LOOPS = 10
+        mix_net = mixNetwork([7, 6, 5, 2], net_gradient, 25, 30, 2, input, expected, 50, learnBase=4,
+                             fractionLearnRate=3 / 4, learnSuppresion=400)
+        error_genetic = []
+        accuracy_mix = []
+        domain = range(1, ROWS * LOOPS + 1, 10)
+        # tutaj operujemy na input i expected
+        mix_net.start_learning()
+        for j in range(LOOPS):
+            for i in range(ROWS):
+                mix_net.process(net_data[i][0])
+                mix_net.correct(net_data[i][1])
+                if (j * ROWS + i) in domain:
+                    error_genetic.append(mix_net.total_error(input, expected))
+                    gradient_hits = 0
+                    for k in range(ROWS):
+                        otp = ParseOutpus(mix_net.process(net_data[k][0]))
+                        if Compare_lists(otp, net_data[k][1]):
+                            gradient_hits += 1
+                    accuracy_mix.append(gradient_hits)
+                print(j, i)
+        mix_net.stop_learning()
 
+        # plt.plot(range(150), error_normal, label="oś x")
+        plt.plot((1, 1), (1, 0))
+        plt.plot(domain, error_genetic, label="price")
+        plt.plot(domain, accuracy_mix, label="hits")
+        plt.xlabel("iteration")
+        plt.ylabel("total error")
+        plt.title("Learnig curve - mix - batch size 5")
+        # linia trendu \/
+        z = numpy.polyfit(domain, error_genetic, 1)
+        p = numpy.poly1d(z)
+        plt.plot(domain, p(domain), "r--")
+        plt.show()
+
+        for i in range(ROWS):
+            print(mix_net.process(net_data[i][0]), net_data[i][1])
 def PlotMusk(option):
     ROWS = 476
     def name_to_tuple_Musk(name):
