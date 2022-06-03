@@ -146,9 +146,9 @@ def net_gradient(net, inputs, targets, **kwargs):
             history["success_rate"] += [success_rate]
             if success_rate > 0.9:
                 break
-            if len(history["success_rate"]) > 10 and\
-                    success_rate <= sum(history["success_rate"][-11:-1])/10 and\
-                    history["av_costs"][-1] >= sum(history["av_costs"][-11:-1])/10:
+            if len(history["success_rate"]) > 5 and\
+                    success_rate <= sum(history["success_rate"][-6:-1])/5 and\
+                    history["av_costs"][-1] >= sum(history["av_costs"][-6:-1])/5:
                 break
 
         if params.SHOW_PROGRESS:

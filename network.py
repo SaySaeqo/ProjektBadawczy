@@ -89,6 +89,25 @@ class Network:
         return v_prev.tolist()[0]
 
     def train(self, inputs, targets, **kwargs):
+        if isinstance(self.correct_func, list):
+            history = {
+                "all_costs": [],
+                "av_costs": [],
+                "success_rate": [],
+                "change_points": []
+            }
+            idx = 0
+            while True:
+                h = self.correct_func[idx % len(self.correct_func)](self, inputs, targets, **kwargs)
+                history["all_costs"] += h["all_costs"]
+                history["av_costs"] += h["av_costs"]
+                history["success_rate"] += h["success_rate"]
+                if history["success_rate"][-1] > 0.8 or idx >= 10:
+                    break
+                history["change_points"] += [len(history["av_costs"])]
+                idx += 1
+            return history
+
         return self.correct_func(self, inputs, targets, **kwargs)
 
     def __repr__(self):
@@ -157,7 +176,7 @@ class Network:
                 "b": self.layers[self._iter_layer]["b"][0, self._iter_neuron],
                 "v": self.layers[self._iter_layer]["v"][0, self._iter_neuron],
                 "z": self.layers[self._iter_layer]["z"][0, self._iter_neuron]
-                      }
+            }
             return neuron
         else:
             raise StopIteration

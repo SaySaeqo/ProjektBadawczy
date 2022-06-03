@@ -333,6 +333,36 @@ def plot_network_comparison(net_data, net_model, test_data_length=3):
     ax[1].legend(["cost", "success rate", "training trend line"])
 
 
+def plot_network_mix(net_data, net_model, test_data_length=3):
+    # start plotting
+    fig, ax = plt.subplots()
+    plt.title("Neural network training method comparison")
+    fig.tight_layout(pad=1.8)
+    major_ticks = np.arange(1.15, step=0.1)
+    minor_ticks = np.arange(1.1, step=0.05)
+
+    #############          MIX          #############
+    history, time_passed = test_network(net_data, net_model, [net_genetic, net_gradient], test_data_length)
+    print("Mix time:", int(time_passed // 60), "min", time_passed % 60, "sec")
+
+    # steps for genetic
+    ax.plot(history["av_costs"], color="blue", label="cost")
+    ax.plot(history["success_rate"], color="yellow", label="success_rate")
+    for p in history["change_points"]:
+        ax.vlines(p, 0.0, 1.0, alpha=0.5, color="red")
+    ax.set(title="Av. Learn Error- mix", xlabel="iteration", ylabel="value", ylim=[0.0, 1.0])
+    # grid
+    ax.grid(linestyle='--', which="both", alpha=0.5)
+    ax.set_yticks(minor_ticks, minor=True)
+    ax.set_yticks(major_ticks)
+    # trend line
+    domain = list(range(len(history["av_costs"])))
+    z = numpy.polyfit(domain, history["av_costs"], 1)
+    p = numpy.poly1d(z)
+    ax.plot(domain, p(domain), "r--")
+    ax.legend(["cost", "success rate", "training trend line"])
+
+
 def test_iris():
     """
     That function just gather parameters I choose good in way of trail and fails process
@@ -351,18 +381,18 @@ def test_iris():
     gen_params.MUTATION_CHANCE = 0.9
     gen_params.MUTATION_RATE = 0.2
     gen_params.BATCH_SIZE = 10
-    # parameter for gradient
+    # parameters for gradient
     grad_params = GradientConst.instance()
     grad_params.MAX_EPOCHS = 100
     grad_params.BATCH_SIZE = 10
 
     # plot results
     plot_network_comparison(net_data, net_model, test_data_length)
+    plt.savefig("last_iris.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])
     table.add_row([repr(grad_params), repr(gen_params)])
     print(table.draw())
-    plt.savefig("last_iris.png")
 
 
 def get_raisin_db():
@@ -420,18 +450,18 @@ def test_raisin():
     gen_params.MUTATION_CHANCE = 0.9
     gen_params.MUTATION_RATE = 0.2
     gen_params.BATCH_SIZE = 15
-    # parameter for gradient
+    # parameters for gradient
     grad_params = GradientConst.instance()
     grad_params.MAX_EPOCHS = 100
     grad_params.BATCH_SIZE = 3
 
     # plot results
     plot_network_comparison(net_data, net_model, test_data_length)
+    plt.savefig("last_raisin.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])
     table.add_row([repr(grad_params), repr(gen_params)])
     print(table.draw())
-    plt.savefig("last_raisin.png")
 
 
 def get_beans_db():
@@ -500,16 +530,16 @@ def test_beans():
     gen_params.MUTATION_RATE = 0.2
     gen_params.BATCH_SIZE = 40
     gen_params.SHOW_PROGRESS = True
-    # parameter for gradient
+    # parameters for gradient
     grad_params = GradientConst.instance()
     grad_params.MAX_EPOCHS = 100
     grad_params.BATCH_SIZE = 10
     grad_params.SHOW_PROGRESS = True
 
     # plot results
-    plot_network_comparison(net_data, net_model, test_data_length)
+    plot_network_mix(net_data, net_model, test_data_length)
+    plt.savefig("last_beans.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])
     table.add_row([repr(grad_params), repr(gen_params)])
     print(table.draw())
-    plt.savefig("last_beans.png")
