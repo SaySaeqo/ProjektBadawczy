@@ -4,6 +4,7 @@ import time
 
 import neurolab as nl
 import numpy as np
+import texttable as texttable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -104,7 +105,7 @@ def test_network_simple(correct_func):
     print(net)
     inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
     targets = [[1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
-    steps = net.train(inputs, targets, test_network_simple=True)
+    net.train(inputs, targets, test_network_simple=True)
     # print(f"\r{i}/{N}", end="")
     print("-*-*-*-*-*-*-*-*-*-\nPO TRENINGU\n-*-*-*-*-*-*-*-*-*-")
     print(net)
@@ -119,10 +120,11 @@ def test_network_simple(correct_func):
     print("0 0 0 0")
 
     plt.figure()
-    plt.plot(steps[0:-4:4])
-    plt.plot(steps[1:-3:4])
-    plt.plot(steps[2:-2:4])
-    plt.plot(steps[3:-1:4])
+    history = ProgressHistory.instance()
+    plt.plot(history.all_costs[0:-4:4])
+    plt.plot(history.all_costs[1:-3:4])
+    plt.plot(history.all_costs[2:-2:4])
+    plt.plot(history.all_costs[3:-1:4])
     plt.title(str(correct_func))
     plt.legend(["000->1111", "010->1011", "011->1100", "111->0000"])
     plt.xlabel("iterations")
@@ -223,7 +225,7 @@ def get_iris_db():
             return (1, 1)
 
     # stworzenie bazy danych
-    with open("iris.data") as file:  # Przez cb 3 małe kotki umarły, bo nie zamykałeś pliku
+    with open("iris.data") as file:
         csvreader = csv.reader(file)
 
         table = []
@@ -233,148 +235,133 @@ def get_iris_db():
         table.pop()  # last one is empty array (eof I suppose)
         random.shuffle(table)
 
-        net_data = []
+        inputs = []
+        targets = []
         for row in table:
-            name = row[-1]
-            row = [float(elem) for elem in row[:-1]]
+            targets += [name2tuple(row[-1])]
+            inputs += [[float(elem) for elem in row[:-1]]]
 
-            input = row
-            expected = name2tuple(name)
-            net_data += [(input, expected)]
-    return net_data
+        # standardization / normalization
+        for feature_idx in range(len(inputs[0])):
+            min_val = min(input[feature_idx] for input in inputs)
+            for input in inputs:
+                input[feature_idx] -= min_val
+            max_val = max(input[feature_idx] for input in inputs)
+            for input in inputs:
+                input[feature_idx] /= max_val
 
-
-def test_network(database, net_model, train_func, nb_tests=10, test_data_length=3):
-    print(train_func)
-
-    # counting total time and succes rate on new data
-    total_success_rate = 0.0
-    time_per_train = []
-    steps = None
-
-    for i in range(nb_tests):
-        # preparing data
-        random.shuffle(database)
-        test_data = database[-test_data_length:]
-        train_data = database[:-test_data_length]
-        net = Network(net_model, train_func)
-        # training
-        start = time.time()
-        if steps:
-            steps = [a + b / nb_tests for a, b in zip(steps, net.train(train_data))]
-        else:
-            steps = [a / nb_tests for a in net.train(train_data)]
-        stop = time.time()
-        time_per_train += [stop - start]
-        # checking results
-        success_rate = 0
-        for data in test_data:
-            results = net(data[0])
-            if all(abs(i - correct) < 0.5 for i, correct in zip(results, data[1])):
-                success_rate += 1
-            if nb_tests == 1:
-                print(results, data[1])
-        success_rate /= len(test_data)
-        total_success_rate += success_rate
-        # printing progress
-        progress_bar(i, nb_tests)
-
-    total_success_rate /= nb_tests
-
-    print("Nets trained: ", nb_tests)
-    print("Success rate: ", total_success_rate * 100, " %")
-    total_time = sum(time_per_train)
-    print("Time: ", int(total_time) // 60, " min ", int(total_time) % 60, " sec")
-
-    return steps, time_per_train
+    return list(zip(inputs, targets))
 
 
-def plot_network_comparison(net_data, net_model, nb_tests, test_data_length=3):
-    fig, ax = plt.subplots(2, 2) if nb_tests > 1 else plt.subplots(2, 1)
+def test_network(database, net_model, train_func, test_data_length=3):
+    # preparing data
+    test_data = database[-test_data_length:]
+    train_data = database[:-test_data_length]
+    inputs = [data[0] for data in train_data]
+    targets = [data[1] for data in train_data]
+    net = Network(net_model, train_func)
+
+    # training
+    start = time.perf_counter()
+    history = net.train(inputs, targets, test_data=test_data)
+    time_passed = time.perf_counter() - start
+
+    return history, time_passed
+
+
+# def test_network(database, net_model, train_func, test_data_length=3, nb_tests=1):
+#     av_costs = []
+#     av_success_rate = []
+#     av_time = []
+#     for _ in range(nb_tests):
+#         history, time_passed = test_network_once(database, net_model, train_func, test_data_length)
+#         random.shuffle(database)
+#         av_costs += [history["av_costs"]]
+#         av_success_rate += [history["success_rate"]]
+#         av_time += [time_passed]
+#     av_costs = [sum(epoch) / len(epoch) for epoch in zip(*av_costs)]
+#     av_success_rate = [sum(epoch) / len(epoch) for epoch in zip(*av_success_rate)]
+#     av_time = sum(av_time) / len(av_time)
+#
+#     return {"av_costs": av_costs, "av_success_rate": av_success_rate, "av_time": av_time}
+
+
+def plot_network_comparison(net_data, net_model, test_data_length=3):
+    # start plotting
+    fig, ax = plt.subplots(2, 1)
     plt.title("Neural network training method comparison")
     fig.tight_layout(pad=1.8)
-    if nb_tests > 1:
-        top_left = ax[0][0]
-        top_right = ax[0][1]
-        bot_left = ax[1][0]
-        bot_right = ax[1][1]
-    else:
-        top_left = ax[0]
-        bot_left = ax[1]
     major_ticks = np.arange(1.15, step=0.1)
     minor_ticks = np.arange(1.1, step=0.05)
 
-    s, tt = test_network(net_data, net_model, net_gradient, nb_tests, test_data_length)
+    #############          GRADIENT          #############
+    history, time_passed = test_network(net_data, net_model, net_gradient, test_data_length)
+    print("Gradient time:", int(time_passed // 60), "min", time_passed % 60, "sec")
 
     # steps for gradient
-    top_left.plot(s)
-    top_left.set(title="Av. Learn Error- gradient", xlabel="iteration", ylabel="average cost")
+    ax[0].plot(history["av_costs"], color="blue", label="cost")
+    ax[0].plot(history["success_rate"], color="yellow", label="success_rate")
+    ax[0].set(title="Av. Learn Error- gradient", xlabel="epoch", ylabel="value", ylim=[0.0, 1.0])
     # grid
-    top_left.grid(linestyle='--', which="both")
-    top_left.set_yticks(minor_ticks, minor=True)
-    top_left.set_yticks(major_ticks)
-    # linia trendu
-    domain = list(range(len(s)))
-    z = numpy.polyfit(domain, s, 1)
+    ax[0].grid(linestyle='--', which="both", alpha=0.5)
+    ax[0].set_yticks(minor_ticks, minor=True)
+    ax[0].set_yticks(major_ticks)
+    # trend line
+    domain = list(range(len(history["av_costs"])))
+    z = numpy.polyfit(domain, history["av_costs"], 1)
     p = numpy.poly1d(z)
-    top_left.plot(domain, p(domain), "r--")
+    ax[0].plot(domain, p(domain), "r--")
+    ax[0].legend(["cost", "success rate", "training trend line"])
 
-    # time per train for gradient
-    if nb_tests > 1:
-        top_right.plot(tt)
-        top_right.set(title="Time spent on learning- gradient", xlabel="attempt", ylabel="seconds")
-        # grid
-        top_right.grid(linestyle='--', which="both")
-        top_right.set_xticks(np.arange(nb_tests))
-
-    s, tt = test_network(net_data, net_model, net_genetic, nb_tests, test_data_length)
+    #############          GENETIC          #############
+    history, time_passed = test_network(net_data, net_model, net_genetic, test_data_length)
+    print("Genetic time:", int(time_passed // 60), "min", time_passed % 60, "sec")
 
     # steps for genetic
-    bot_left.plot(s)
-    bot_left.set(title="Av. Learn Error- genetic", xlabel="generation", ylabel="average cost")
+    ax[1].plot(history["av_costs"], color="blue", label="cost")
+    ax[1].plot(history["success_rate"], color="yellow", label="success_rate")
+    ax[1].set(title="Av. Learn Error- genetic", xlabel="generation", ylabel="value", ylim=[0.0, 1.0])
     # grid
-    bot_left.grid(linestyle='--', which="both")
-    bot_left.set_yticks(minor_ticks, minor=True)
-    bot_left.set_yticks(major_ticks)
-    # linia trendu
-    domain = list(range(len(s)))
-    z = numpy.polyfit(domain, s, 1)
+    ax[1].grid(linestyle='--', which="both", alpha=0.5)
+    ax[1].set_yticks(minor_ticks, minor=True)
+    ax[1].set_yticks(major_ticks)
+    # trend line
+    domain = list(range(len(history["av_costs"])))
+    z = numpy.polyfit(domain, history["av_costs"], 1)
     p = numpy.poly1d(z)
-    bot_left.plot(domain, p(domain), "r--")
-
-    # time per train for gradient
-    if nb_tests > 1:
-        bot_right.plot(tt)
-        bot_right.set(title="Time spent on learning- genetic", xlabel="attempt", ylabel="seconds")
-        # grid
-        bot_right.grid(linestyle='--', which="both")
-        bot_right.set_xticks(np.arange(nb_tests))
+    ax[1].plot(domain, p(domain), "r--")
+    ax[1].legend(["cost", "success rate", "training trend line"])
 
 
-def test_iris(nb_tests=10):
+def test_iris():
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
     print("Testing Iris DB...")
 
     net_data = get_iris_db()
+    random.shuffle(net_data)
     net_model = [4, 5, 5, 2]
-    test_data_length = 5
+    test_data_length = len(net_data) // 20 * 3  # 15%
 
-    # these do not work, you need to actually copy these to constants.py
     # parameters for genetic
-    nparams = GeneticConst.instance()
-    nparams.MAX_GENERATIONS = 50
-    nparams.POPULATION_SIZE = 8
-    nparams.MUTATION_CHANCE = 0.9
-    nparams.MUTATION_RATE = 0.2
-    nparams.BATCH_SIZE = 10
+    gen_params = GeneticConst.instance()
+    gen_params.MAX_GENERATIONS = 100
+    gen_params.POPULATION_SIZE = 8
+    gen_params.MUTATION_CHANCE = 0.9
+    gen_params.MUTATION_RATE = 0.2
+    gen_params.BATCH_SIZE = 10
     # parameter for gradient
-    gparams = GradientConst.instance()
-    gparams.MAX_ITERATIONS = 100
-    gparams.BATCH_SIZE = 10
+    grad_params = GradientConst.instance()
+    grad_params.MAX_EPOCHS = 100
+    grad_params.BATCH_SIZE = 10
 
-    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    # plot results
+    plot_network_comparison(net_data, net_model, test_data_length)
+    table = texttable.Texttable()
+    table.add_row(["Gradient params:", "Genetic params:"])
+    table.add_row([repr(grad_params), repr(gen_params)])
+    print(table.draw())
     plt.savefig("last_iris.png")
 
 
@@ -397,46 +384,53 @@ def get_raisin_db():
         table.pop()  # last one is empty array (eof I suppose)
         random.shuffle(table)
 
-        net_data = []
+        inputs = []
+        targets = []
         for row in table:
-            name = row[-1]
-            row = [float(elem) for elem in row[:-1]]
-            # poprawianie do przedziału (0,1)
-            row[0] = row[0] / 235047
-            row[1] = row[1] / 1000
-            row[2] = row[2] / 493
-            row[4] = row[4] / 278217
-            row[6] = row[6] / 2700
+            targets += [name2tuple(row[-1])]
+            inputs += [[float(elem) for elem in row[:-1]]]
 
-            input = row
-            expected = name2tuple(name)
-            net_data += [(input, expected)]
-    return net_data
+        # standardization / normalization
+        for feature_idx in range(len(inputs[0])):
+            min_val = min(input[feature_idx] for input in inputs)
+            for input in inputs:
+                input[feature_idx] -= min_val
+            max_val = max(input[feature_idx] for input in inputs)
+            for input in inputs:
+                input[feature_idx] /= max_val
+
+    return list(zip(inputs, targets))
 
 
-def test_raisin(nb_tests=10):
+def test_raisin():
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
     print("Testing Raisin DB...")
 
     net_data = get_raisin_db()
-    net_model = [7, 5, 2, 1]
-    test_data_length = 30
+    random.shuffle(net_data)
+    net_model = [7, 5, 5, 1]
+    test_data_length = len(net_data) // 20 * 3  # 15%
 
     # parameters for genetic
-    nparams = GeneticConst.instance()
-    nparams.MAX_GENERATIONS = 10
-    nparams.POPULATION_SIZE = 8
-    nparams.MUTATION_CHANCE = 0.9
-    nparams.MUTATION_RATE = 0.2
-    nparams.BATCH_SIZE = 15
+    gen_params = GeneticConst.instance()
+    gen_params.MAX_GENERATIONS = 100
+    gen_params.POPULATION_SIZE = 8
+    gen_params.MUTATION_CHANCE = 0.9
+    gen_params.MUTATION_RATE = 0.2
+    gen_params.BATCH_SIZE = 15
     # parameter for gradient
-    gparams = GradientConst.instance()
-    gparams.MAX_ITERATIONS = 25
-    gparams.BATCH_SIZE = 3
+    grad_params = GradientConst.instance()
+    grad_params.MAX_EPOCHS = 100
+    grad_params.BATCH_SIZE = 3
 
-    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    # plot results
+    plot_network_comparison(net_data, net_model, test_data_length)
+    table = texttable.Texttable()
+    table.add_row(["Gradient params:", "Genetic params:"])
+    table.add_row([repr(grad_params), repr(gen_params)])
+    print(table.draw())
     plt.savefig("last_raisin.png")
 
 
@@ -469,44 +463,53 @@ def get_beans_db():
         table.pop()  # last one is empty array (eof I suppose)
         random.shuffle(table)
 
-        net_data = []
+        inputs = []
+        targets = []
         for row in table:
-            name = row[-1]
-            input = [float(elem) for elem in row[:-1]]
-            # poprawianie do przedziału (0,1)
-            input[0] = input[0] / 254616
-            input[1] = input[1] / 1986
-            input[2] = input[2] / 739
-            input[3] = input[3] / 462
-            input[4] = input[4] / 2.5
-            input[6] = input[6] / 263261
+            targets += [name2tuple(row[-1])]
+            inputs += [[float(elem) for elem in row[:-1]]]
 
-            expected = name2tuple(name)
-            net_data += [(input, expected)]
-    return net_data
+        # standardization / normalization
+        for feature_idx in range(len(inputs[0])):
+            min_val = min(input[feature_idx] for input in inputs)
+            for input in inputs:
+                input[feature_idx] -= min_val
+            max_val = max(input[feature_idx] for input in inputs)
+            for input in inputs:
+                input[feature_idx] /= max_val
+
+    return list(zip(inputs, targets))
 
 
-def test_beans(nb_tests=10):
+def test_beans():
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
     print("Testing Beans DB...")
 
     net_data = get_beans_db()
-    net_model = [16, 10, 6, 3]
-    test_data_length = 1000
+    random.shuffle(net_data)
+    net_model = [16, 10, 10, 3]
+    test_data_length = len(net_data) // 20 * 3  # 15%
 
     # parameters for genetic
-    nparams = GeneticConst.instance()
-    nparams.MAX_GENERATIONS = 10
-    nparams.POPULATION_SIZE = 12
-    nparams.MUTATION_CHANCE = 0.8
-    nparams.MUTATION_RATE = 0.2
-    nparams.BATCH_SIZE = 50
+    gen_params = GeneticConst.instance()
+    gen_params.MAX_GENERATIONS = 100
+    gen_params.POPULATION_SIZE = 8
+    gen_params.MUTATION_CHANCE = 0.8
+    gen_params.MUTATION_RATE = 0.2
+    gen_params.BATCH_SIZE = 40
+    gen_params.SHOW_PROGRESS = True
     # parameter for gradient
-    gparams = GradientConst.instance()
-    gparams.MAX_ITERATIONS = 10
-    gparams.BATCH_SIZE = 8
+    grad_params = GradientConst.instance()
+    grad_params.MAX_EPOCHS = 100
+    grad_params.BATCH_SIZE = 10
+    grad_params.SHOW_PROGRESS = True
 
-    plot_network_comparison(net_data, net_model, nb_tests, test_data_length)
+    # plot results
+    plot_network_comparison(net_data, net_model, test_data_length)
+    table = texttable.Texttable()
+    table.add_row(["Gradient params:", "Genetic params:"])
+    table.add_row([repr(grad_params), repr(gen_params)])
+    print(table.draw())
     plt.savefig("last_beans.png")

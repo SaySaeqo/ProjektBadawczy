@@ -1,4 +1,6 @@
 import copy
+import itertools
+import operator
 import random
 
 import numpy as np
@@ -51,22 +53,20 @@ class Network:
         """
         self.correct_func = correct_func
         self.model_shape = model_shape
-        model_shape_shifted = ([0] + model_shape)[:-1]
-        self.nb_layers = len(model_shape)
+        self.nb_layers = len(model_shape) - 1
 
         if empty:
             weights = [np.zeros((nb_neur_prev, nb_neur_cur))
-                       for nb_neur_prev, nb_neur_cur in zip(model_shape_shifted, model_shape)]
-            biases = [np.zeros((nb_neur, 1)) for nb_neur in model_shape]
+                       for nb_neur_prev, nb_neur_cur in zip(model_shape, model_shape[1:])]
+            biases = [np.zeros((nb_neur, 1)) for nb_neur in model_shape[1:]]
         else:
             weights = [np.random.rand(nb_neur_prev, nb_neur_cur)
-                       for nb_neur_prev, nb_neur_cur in zip(model_shape_shifted, model_shape)]
-            biases = [np.random.rand(nb_neur, 1) for nb_neur in model_shape]
+                       for nb_neur_prev, nb_neur_cur in zip(model_shape, model_shape[1:])]
+            biases = [np.random.rand(nb_neur, 1) for nb_neur in model_shape[1:]]
 
-        values = [np.zeros((1, nb_neur)) for nb_neur in model_shape]
-        zs = [np.zeros((nb_neur, 1)) for nb_neur in model_shape]
-        self.layers = zip(weights, biases, values, zs)
-        self.layers = [list(layer) for layer in self.layers]
+        values = [np.zeros((1, nb_neur)) for nb_neur in model_shape[1:]]
+        zs = [np.zeros((nb_neur, 1)) for nb_neur in model_shape[1:]]
+        self.layers = [{"w": w, "b": b, "v": v, "z": z} for w, b, v, z in zip(weights, biases, values, zs)]
 
     def __call__(self, *args, **kwargs):
         return self.process(*args)
@@ -81,22 +81,15 @@ class Network:
         """
 
         # turn on the net
-        first = True
-        v_prev = None
+        v_prev = np.matrix(args)
         for layer in self.layers:
-            if first:
-                v_prev = layer[2] = np.matrix(args)
-                first = False
-                continue
-
-            w, b, v, z = layer
-            layer[3] = np.transpose(v_prev @ w) + b
-            v_prev = layer[2] = np.transpose(sigmoid(layer[3]))
+            layer["z"] = np.transpose(v_prev @ layer["w"]) + layer["b"]
+            v_prev = layer["v"] = np.transpose(sigmoid(layer["z"]))
 
         return v_prev.tolist()[0]
 
-    def train(self, *args, **kwargs):
-        return self.correct_func(self, *args, **kwargs)
+    def train(self, inputs, targets, **kwargs):
+        return self.correct_func(self, inputs, targets, **kwargs)
 
     def __repr__(self):
         return self.__str__()
@@ -116,9 +109,9 @@ class Network:
         text = ""
         for i in range(self.nb_layers):
             text += f"-------LAYER {i + 1}-------\n"
-            text += f"WEIGHTS:\n{self.layers[i][0]}\n"
-            text += f"BIASES:\n{self.layers[i][1]}\n"
-            text += f"VALUES:\n{self.layers[i][2]}\n"
+            text += f"WEIGHTS:\n{self.layers[i]['w']}\n"
+            text += f"BIASES:\n{self.layers[i]['b']}\n"
+            text += f"VALUES:\n{self.layers[i]['v']}\n"
         text += "---------END---------"
         return text
 
@@ -131,37 +124,51 @@ class Network:
 
     def __iadd__(self, other):
         for layer1, layer2 in zip(self.layers, other.layers):
-            w1, b1, v1, z1 = layer1
-            w2, b2, v2, z2 = layer2
-            w1 += w2
-            b1 += b1
+            layer1["w"] += layer2["w"]
+            layer1["b"] += layer2["b"]
         return self
 
     def __isub__(self, other):
         for layer1, layer2 in zip(self.layers, other.layers):
-            w1, b1, v1, z1 = layer1
-            w2, b2, v2, z2 = layer2
-            w1 -= w2
-            b1 -= b1
+            layer1["w"] -= layer2["w"]
+            layer1["b"] -= layer2["b"]
         return self
 
     def __truediv__(self, other):
         result = Network.create_empty(self.model_shape)
         for result_layer, layer1 in zip(result.layers, self.layers):
-            w, b, v, z = layer1
-            result_layer[0] = w / other
-            result_layer[1] = b / other
+            result_layer["w"] = layer1["w"] / other
+            result_layer["b"] = layer1["b"] / other
         return result
+
+    def __iter__(self):
+        self._iter_layer = 0
+        self._iter_neuron = 0
+        return self
+
+    def __next__(self):
+        if self._iter_layer < self.nb_layers:
+            if self._iter_neuron >= self.layers[self._iter_layer]["v"].size:
+                self._iter_layer += 1
+                self._iter_neuron = 0
+                return next(self)
+            neuron = {
+                "w": self.layers[self._iter_layer]["w"][:, self._iter_neuron],
+                "b": self.layers[self._iter_layer]["b"][0, self._iter_neuron],
+                "v": self.layers[self._iter_layer]["v"][0, self._iter_neuron],
+                "z": self.layers[self._iter_layer]["z"][0, self._iter_neuron]
+                      }
+            return neuron
+        else:
+            raise StopIteration
 
 
 class WLTNetwork(Network):
     def __init__(self, model_shape, correct_func=None, empty=False):
         super().__init__(model_shape, correct_func, empty)
-        self.activation_genome = [1 for _ in range(sum(model_shape))]
-        model_shape_shifted = ([0] + model_shape)[:-1]
-        weights = [np.ones((nb_neur_prev, nb_neur_cur))
-                   for nb_neur_prev, nb_neur_cur in zip(model_shape_shifted, model_shape)]
-        self.weights_genome = weights
+        self.activation_genome = [1 for _ in range(sum(model_shape[1:]))]
+        self.weights_genome = [np.ones((nb_neur_prev, nb_neur_cur))
+                               for nb_neur_prev, nb_neur_cur in zip(model_shape, model_shape[1:])]
 
     def process(self, args):
         """
@@ -177,21 +184,13 @@ class WLTNetwork(Network):
         gen_length = 0
 
         # turn on the net
-        first = True
-        v_prev = None
-        for layer, weights_genome_layer in zip(self.layers,self.weights_genome):
-            gen_length = layer[0].size
+        v_prev = np.matrix(args)
+        for layer, weights_genome_layer in zip(self.layers, self.weights_genome):
+            gen_length = layer["w"].size
 
-            if first:
-                v_prev = layer[2] = np.matrix(args)
-                curr_gen += gen_length
-                first = False
-                continue
-
-            w, b, v, z = layer
-            w = np.multiply(w, weights_genome_layer)
-            layer[3] = np.transpose(v_prev @ w) + b
-            v_prev = layer[2] = np.transpose(sigmoid(layer[3]))
+            w = np.multiply(layer["w"], weights_genome_layer)
+            layer["z"] = np.transpose(v_prev @ w) + layer["b"]
+            v_prev = layer["v"] = np.transpose(sigmoid(layer["z"]))
             curr_gen += gen_length
 
         return v_prev.tolist()[0]
