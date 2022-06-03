@@ -295,15 +295,17 @@ def plot_network_comparison(net_data, net_model, test_data_length=3):
     minor_ticks = np.arange(1.1, step=0.05)
 
     #############          GRADIENT          #############
-    history, time_passed = test_network(net_data, net_model, net_gradient, test_data_length)
+    history, time_passed = test_network(net_data, net_model, [net_gradient, net_genetic], test_data_length)
     print("Gradient time:", int(time_passed // 60), "min", time_passed % 60, "sec")
 
     # steps for gradient
     ax[0].plot(history["av_costs"], color="blue", label="cost")
     ax[0].plot(history["success_rate"], color="yellow", label="success_rate")
+    for p in history["change_points"]:
+        ax[0].vlines(p, 0.0, 1.0, alpha=0.5, color="red")
     ax[0].set(title="Av. Learn Error- gradient", xlabel="epoch", ylabel="value", ylim=[0.0, 1.0])
     # grid
-    ax[0].grid(linestyle='--', which="both", alpha=0.5)
+    ax[0].grid(linestyle='--', which="major", alpha=0.5)
     ax[0].set_yticks(minor_ticks, minor=True)
     ax[0].set_yticks(major_ticks)
     # trend line
@@ -314,15 +316,17 @@ def plot_network_comparison(net_data, net_model, test_data_length=3):
     ax[0].legend(["cost", "success rate", "training trend line"])
 
     #############          GENETIC          #############
-    history, time_passed = test_network(net_data, net_model, net_genetic, test_data_length)
+    history, time_passed = test_network(net_data, net_model, [net_genetic, net_gradient], test_data_length)
     print("Genetic time:", int(time_passed // 60), "min", time_passed % 60, "sec")
 
     # steps for genetic
     ax[1].plot(history["av_costs"], color="blue", label="cost")
     ax[1].plot(history["success_rate"], color="yellow", label="success_rate")
+    for p in history["change_points"]:
+        ax[1].vlines(p, 0.0, 1.0, alpha=0.5, color="red")
     ax[1].set(title="Av. Learn Error- genetic", xlabel="generation", ylabel="value", ylim=[0.0, 1.0])
     # grid
-    ax[1].grid(linestyle='--', which="both", alpha=0.5)
+    ax[1].grid(linestyle='--', which="major", alpha=0.5)
     ax[1].set_yticks(minor_ticks, minor=True)
     ax[1].set_yticks(major_ticks)
     # trend line
@@ -342,7 +346,7 @@ def plot_network_mix(net_data, net_model, test_data_length=3):
     minor_ticks = np.arange(1.1, step=0.05)
 
     #############          MIX          #############
-    history, time_passed = test_network(net_data, net_model, [net_genetic, net_gradient], test_data_length)
+    history, time_passed = test_network(net_data, net_model, [net_gradient, net_genetic], test_data_length)
     print("Mix time:", int(time_passed // 60), "min", time_passed % 60, "sec")
 
     # steps for genetic
@@ -352,7 +356,7 @@ def plot_network_mix(net_data, net_model, test_data_length=3):
         ax.vlines(p, 0.0, 1.0, alpha=0.5, color="red")
     ax.set(title="Av. Learn Error- mix", xlabel="iteration", ylabel="value", ylim=[0.0, 1.0])
     # grid
-    ax.grid(linestyle='--', which="both", alpha=0.5)
+    ax.grid(linestyle='--', which="major", alpha=0.5)
     ax.set_yticks(minor_ticks, minor=True)
     ax.set_yticks(major_ticks)
     # trend line
@@ -537,7 +541,7 @@ def test_beans():
     grad_params.SHOW_PROGRESS = True
 
     # plot results
-    plot_network_mix(net_data, net_model, test_data_length)
+    plot_network_comparison(net_data, net_model, test_data_length)
     plt.savefig("last_beans.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])

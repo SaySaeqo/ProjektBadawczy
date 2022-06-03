@@ -102,7 +102,7 @@ class Network:
                 history["all_costs"] += h["all_costs"]
                 history["av_costs"] += h["av_costs"]
                 history["success_rate"] += h["success_rate"]
-                if history["success_rate"][-1] > 0.8 or idx >= 10:
+                if history["success_rate"][-1] >= 0.85 or idx >= 10:
                     break
                 history["change_points"] += [len(history["av_costs"])]
                 idx += 1

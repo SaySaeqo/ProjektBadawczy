@@ -311,9 +311,10 @@ def net_genetic_wlt(net: Network, inputs, targets, **kwargs):
             history["success_rate"] += [success_rate]
             if success_rate > 0.9:
                 break
-            if len(history["success_rate"]) > 5 and \
-                    success_rate <= sum(history["success_rate"][-6:-1]) / 5 and \
-                    history["av_costs"][-1] >= sum(history["av_costs"][-6:-1]) / 5:
+            av_coeff = 5
+            if len(history["success_rate"]) > av_coeff and \
+                    success_rate <= sum(history["success_rate"][-1 - av_coeff:-1]) / av_coeff and \
+                    history["av_costs"][-1] >= sum(history["av_costs"][-1 - av_coeff:-1]) / av_coeff:
                 break
 
         if params.SHOW_PROGRESS:
