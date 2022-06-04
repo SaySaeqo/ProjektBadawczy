@@ -111,52 +111,43 @@ def genetic_func_mean_random4():
     pass
 
 
-def net_genetic(net: Network, *args, **kwargs):
+def net_genetic(net: Network, inputs, targets, **kwargs):
     """
     Correct function for neural network. Uses **genetic algorithm** to upgrade network weights and biases.
 
     :param inputs: list of network's inputs
         (when single input for network is a list, then it is list of lists)
     :param expected_outputs: list of expected outputs for each network's inputs in previous argument
-    :return: void
+    :return: history for debugging and ploting
     """
-    # cost need to be minimal
-    steps = []  # cost function values over iterations
 
-    params = NConst.instance()
+    params = GeneticConst.instance()
+    history = {
+        "all_costs": [],
+        "av_costs": [],
+        "success_rate": []
+    }
 
-    # support for arguments type: list of tuples (input, ex_output)
-    if len(args) == 1:
-        args = args[0]
-    elif len(args) == 2:
-        inputs, ex_outputs = args
-        args = list(zip(inputs, ex_outputs))
+    train_data = list(zip(inputs, targets))
 
     population = [Network(net.model_shape) for _ in range(params.POPULATION_SIZE)]
 
-    for iter in range(params.MAX_GENERATIONS):
-        semi_step = []
+    for gen in range(params.MAX_GENERATIONS):
+        gen_costs = []
 
-        for batch_ptr in range(0, len(args), params.BATCH_SIZE):
-            inout = args[batch_ptr:batch_ptr+params.BATCH_SIZE]
+        # train
+        for batch_ptr in range(0, len(train_data), params.BATCH_SIZE):
+            inout = train_data[batch_ptr:batch_ptr + params.BATCH_SIZE]
 
             def fitness(network):
-                costs = []
-                for input, ex_output in inout:
-                    output = network(input)
-                    costs += [np.float_power(output - np.matrix(ex_output), 2)]
-                return np.mean(costs)
+                costs = (np.sum(np.float_power(np.subtract(network(input), ex_output), 2))
+                         for input, ex_output in inout)
+                return sum(costs)/len(inout)
 
             # selection
-
-            # sorting by cost
-
             population.sort(key=lambda a: fitness(a))
-            if kwargs.get("test_network_simple"):
-                steps += [fitness(population[0])]  # smallest cost for statistics
-            else:
-                semi_step += [fitness(population[0])]  # smallest cost for statistics
 
+            gen_costs += [fitness(population[0])]  # smallest cost for statistics
 
             # crossover
             children = [copy.deepcopy(population[0])
@@ -169,26 +160,166 @@ def net_genetic(net: Network, *args, **kwargs):
             # mutation
             for individual in children:
                 for layer in individual.layers:
-                    w, b, _, _ = layer
-
-                    for i in range(len(w)):
-                        for j in range(len(w[i])):
+                    for i in range(len(layer["w"])):
+                        for j in range(len(layer["w"][i])):
                             if random.random() < params.MUTATION_CHANCE:
-                                w[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
-                    for i in range(len(b)):
-                        for j in range(len(b[i])):
+                                layer["w"][i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
+                    for i in range(len(layer["b"])):
+                        for j in range(len(layer["b"][i])):
                             if random.random() < params.MUTATION_CHANCE:
-                                b[i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
+                                layer["b"][i][j] += random.uniform(-params.MUTATION_RATE, params.MUTATION_RATE)
 
             population = population[:2] + children[:params.POPULATION_SIZE - 2]
 
+        if kwargs.get("test_network_simple"):
+            history["all_costs"] += gen_costs
+        history["av_costs"] += [np.mean(gen_costs)]
 
-        if not kwargs.get("test_network_simple"):
-            steps += [np.mean(semi_step)]
+        if kwargs.get("test_data"):
+            success_rate = 0
+            for data in kwargs["test_data"]:
+                results = population[0](data[0])
+                if all(abs(a - y) < 0.5 for a, y in zip(results, data[1])):
+                    success_rate += 1
+            success_rate /= len(kwargs["test_data"])
+            history["success_rate"] += [success_rate]
+            if success_rate > 0.9:
+                break
+            if len(history["success_rate"]) > 10 and \
+                    success_rate <= sum(history["success_rate"][-11:-1]) / 10 and \
+                    history["av_costs"][-1] >= sum(history["av_costs"][-11:-1]) / 10:
+                break
 
-        if params.MAX_GENERATIONS > 200:
-            progress_bar(iter, params.MAX_GENERATIONS)
+        if params.SHOW_PROGRESS:
+            progress_bar(gen, params.MAX_GENERATIONS)
 
         net.layers = population[0].layers
 
-    return steps
+    return history
+
+
+def net_genetic_wlt(net: Network, inputs, targets, **kwargs):
+    """
+    Correct function for neural network. Uses  **winning lotery ticket strategy**
+    (genetic algorithm) to remove neurons from nets and get best subnet for the problem.
+
+    :param inputs: list of network's inputs
+        (when single input for network is a list, then it is list of lists)
+    :param expected_outputs: list of expected outputs for each network's inputs in previous argument
+    :return: history for debugging and ploting
+    """
+    params = GeneticConst.instance()
+    history = {
+        "all_costs": [],
+        "av_costs": [],
+        "success_rate": []
+    }
+
+    train_data = list(zip(inputs, targets))
+
+    population = [network.WLTNetwork(net.model_shape) for _ in range(params.POPULATION_SIZE)]
+
+    for gen in range(params.MAX_GENERATIONS):
+        gen_costs = []
+
+        for batch_ptr in range(0, len(train_data), params.BATCH_SIZE):
+            inout = train_data[batch_ptr:batch_ptr + params.BATCH_SIZE]
+
+            def fitness(network):
+                costs = (np.sum(np.float_power(np.subtract(network(input), ex_output), 2))
+                         for input, ex_output in inout)
+                return np.mean(costs)
+
+            # selection
+            population.sort(key=lambda a: fitness(a))
+            gen_costs += [fitness(population[0])]  # smallest cost for statistics
+
+            # crossover
+            children = []
+            for _ in range(params.POPULATION_SIZE - 2):
+                mather_genome = population[0].weights_genome
+                tmp = []
+                for x in mather_genome:
+                    tmp += x.flatten().tolist()
+                mather_genome = tmp
+                father_genome = population[1].weights_genome
+                tmp = []
+                for x in father_genome:
+                    tmp += x.flatten().tolist()
+                father_genome = tmp
+
+                nb_gens2take = random.randint(0, len(mather_genome))
+                gens2take = random.sample(list(range(0, len(mather_genome))), nb_gens2take)
+                child = network.WLTNetwork(net.model_shape)
+                child_genome = []
+                for i in gens2take:
+                    child_genome += father_genome[len(child_genome):i]
+                    child_genome += [mather_genome[i]]
+                child_genome += father_genome[len(child_genome):len(father_genome)]
+
+                i = 0
+                for a in range(len(child.weights_genome)):
+                    for b in range(child.weights_genome[a].shape[0]):
+                        for c in range(child.weights_genome[a].shape[1]):
+                            child.weights_genome[a][b][c] = child_genome[i]
+                            i += 1
+                children += [child]
+
+            # mutation
+            for child in children:
+                for a in range(len(child.weights_genome)):
+                    for b in range(child.weights_genome[a].shape[0]):
+                        for c in range(child.weights_genome[a].shape[1]):
+                            if random.random() < params.MUTATION_CHANCE:
+                                child.weights_genome[a][b][c] = int(not child.weights_genome[a][b][c])
+                # if random.random() < params.MUTATION_CHANCE:
+                #     # nb_gens2reverse = random.randrange(
+                #     #     len(individual.activation_genome) - individual.model_shape[-1])
+                #
+                #     # MUTATION_TYPE = "soft"
+                #
+                #     # if MUTATION_TYPE == "soft":
+                #     #     if individual.activation_genome[nb_gens2reverse] == 0:
+                #     #         individual.activation_genome[nb_gens2reverse] = 1
+                #     #     else:
+                #     #         individual.activation_genome[nb_gens2reverse] = 0
+                #     # if MUTATION_TYPE == "hard":
+                #     #     gens2reverse = random.sample(
+                #     #         list(range(
+                #     #             (len(individual.activation_genome) - individual.model_shape[-1])
+                #     #         )),
+                #     #         nb_gens2reverse)
+                #     #     for i in gens2reverse:
+                #     #         if individual.activation_genome[i] == 0:
+                #     #             individual.activation_genome[i] = 1
+                #     #         else:
+                #     #             individual.activation_genome[i] = 0
+
+            population = population[:2] + children[:params.POPULATION_SIZE - 2]
+
+        if kwargs.get("test_network_simple"):
+            history["all_costs"] += gen_costs
+        history["av_costs"] += [np.mean(gen_costs)]
+
+        if kwargs.get("test_data"):
+            success_rate = 0
+            for data in kwargs["test_data"]:
+                results = population[0](data[0])
+                if all(abs(a - y) < 0.5 for a, y in zip(results, data[1])):
+                    success_rate += 1
+            success_rate /= len(kwargs["test_data"])
+            history["success_rate"] += [success_rate]
+            if success_rate > 0.9:
+                break
+            av_coeff = 5
+            if len(history["success_rate"]) > av_coeff and \
+                    success_rate <= sum(history["success_rate"][-1 - av_coeff:-1]) / av_coeff and \
+                    history["av_costs"][-1] >= sum(history["av_costs"][-1 - av_coeff:-1]) / av_coeff:
+                break
+
+        if params.SHOW_PROGRESS:
+            progress_bar(gen, params.MAX_GENERATIONS)
+
+        net.layers = population[0].layers
+
+    return history

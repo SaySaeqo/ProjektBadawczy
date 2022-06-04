@@ -17,7 +17,7 @@ def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
     organisms = create_population(arg_num, domain_list, probe_numb)
 
     iterations = 0
-    while (iterations < MAX_ITERATIONS):
+    while (iterations < MAX_EPOCHS):
 
         iterations += 1
         # dla każdego organizmu
@@ -35,7 +35,7 @@ def gradient_algorithm(func, arg_num, domain_list, min_max, probe_numb):
                 org.data[i] -= numpy.sign(grad[i]) * 0.01
         asses(organisms, func)
         organisms = sorted(organisms, key=lambda x: x.ocena, reverse=False)
-        print(iterations, '/', MAX_ITERATIONS)
+        print(iterations, '/', MAX_EPOCHS)
 
     asses(organisms, func)
     organisms = sorted(organisms, key=lambda x: x.ocena, reverse=False)
@@ -77,60 +77,53 @@ def computate_derivatives(net, input, ex_output):
     # compute values for each neuron
     net_output = net.process(input)
     # d_cost/d_value from net output
-    net_output = np.matrix(net_output)
-    ex_output = np.matrix(ex_output)
-    d_cost_d_a = 2 * (net_output - ex_output)
-    for i in reversed(range(1, net.nb_layers)):
-        w, b, _, z = net.layers[i]
-        _, _, v, _ = net.layers[i - 1]
+    d_cost_d_a = 2 * (np.matrix(net_output) - np.matrix(ex_output))
+    for i in reversed(range(net.nb_layers)):
 
-        d_cost_d_z = np.multiply(np.transpose(d_cost_d_a), sigmoid_der(z))
+        v_prev = np.matrix(input) if i == 0 else net.layers[i-1]["v"]
+
+        d_cost_d_z = np.multiply(np.transpose(d_cost_d_a), sigmoid_der(net.layers[i]["z"]))
         d_cost_d_b = d_cost_d_z
-        d_cost_d_w = np.transpose(v) @ np.transpose(d_cost_d_z)
-        d_cost_d_a = np.transpose(w @ d_cost_d_z)
+        d_cost_d_w = np.transpose(v_prev) @ np.transpose(d_cost_d_z)
+        d_cost_d_a = np.transpose(net.layers[i]["w"] @ d_cost_d_z)
 
-        ders_net.layers[i][0] = d_cost_d_w
-        ders_net.layers[i][1] = d_cost_d_b
+        ders_net.layers[i]["w"] = d_cost_d_w
+        ders_net.layers[i]["b"] = d_cost_d_b
 
     return ders_net
 
 
-def net_gradient(net, *args, **kwargs):
+def net_gradient(net, inputs, targets, **kwargs):
     """
     Correct function for neural network. Uses **gradient** mechanics to upgrade network weights and biases.
 
     :param inputs: list of network's inputs
         (when single input for network is a list, then it is list of lists)
     :param expected_outputs: list of expected outputs for each network's inputs in previous argument
-    :return: void
+    :return: history for debugging and ploting
     """
 
-    # cost need to be minimal
-    steps = []  # cost function values over iterations
+    params = GradientConst.instance()
+    history = {
+        "all_costs": [],
+        "av_costs": [],
+        "success_rate": []
+    }
 
-    params = GConst.instance()
+    train_data = list(zip(inputs,targets))
 
-    # support for arguments type: list of tuples (input, ex_output)
-    if len(args) == 1:
-        args = args[0]
-    elif len(args) == 2:
-        inputs, ex_outputs = args
-        args = list(zip(inputs, ex_outputs))
+    for ep in range(params.MAX_EPOCHS):
+        epoch_costs = []
 
-    for iter in range(params.MAX_ITERATIONS):
-        batch_count = 0
-        semi_step = []
-
-        for batch_ptr in range(0, len(args), params.BATCH_SIZE):
-            inout = args[batch_ptr:batch_ptr+params.BATCH_SIZE]
+        # train
+        for batch_ptr in range(0, len(train_data), params.BATCH_SIZE):
+            inout = train_data[batch_ptr:batch_ptr+params.BATCH_SIZE]
 
             ders_buffer = []
             for input, ex_output in inout:
                 # for debugging
-                input = np.matrix(input)
-                ex_output = np.matrix(ex_output)
-                cost = np.sum(np.float_power(net(input) - ex_output, 2))
-                semi_step += [cost]
+                cost = np.sum(np.float_power(np.subtract(net(input), ex_output), 2))
+                epoch_costs += [cost]
 
                 # ders is Network object which contains derivatives for weights and biases
                 ders = computate_derivatives(net, input, ex_output)
@@ -140,11 +133,26 @@ def net_gradient(net, *args, **kwargs):
                 net -= average(ders_buffer)
 
         if kwargs.get("test_network_simple"):
-            steps += semi_step
-        else:
-            steps += [np.mean(semi_step)]
+            history["all_costs"] += epoch_costs
+        history["av_costs"] += [np.mean(epoch_costs)]
 
-        if params.MAX_ITERATIONS > 500:
-            progress_bar(iter, params.MAX_ITERATIONS)
+        if kwargs.get("test_data"):
+            success_rate = 0
+            for data in kwargs["test_data"]:
+                results = net(data[0])
+                if all(abs(a - y) < 0.5 for a, y in zip(results, data[1])):
+                    success_rate += 1
+            success_rate /= len(kwargs["test_data"])
+            history["success_rate"] += [success_rate]
+            if success_rate > 0.9:
+                break
+            av_coeff = 5
+            if len(history["success_rate"]) > av_coeff and \
+                    success_rate <= sum(history["success_rate"][-1 - av_coeff:-1]) / av_coeff and \
+                    history["av_costs"][-1] >= sum(history["av_costs"][-1 - av_coeff:-1]) / av_coeff:
+                break
 
-    return steps
+        if params.SHOW_PROGRESS:
+            progress_bar(ep, params.MAX_EPOCHS)
+
+    return history

@@ -13,19 +13,32 @@ CALC_NEURON = 2
 
 INPUT = 0
 OUTPUT = 1
-MAX_GENERATIONS = MAX_ITERATIONS = 200  # ?? nie używam już
+MAX_GENERATIONS = MAX_EPOCHS = 200  # ?? nie używam już
 
 
 @Singleton
-class NConst:
-    MAX_GENERATIONS = 10
-    POPULATION_SIZE = 8
-    MUTATION_CHANCE = 0.9
-    MUTATION_RATE = 0.2
-    BATCH_SIZE = 10
+class GeneticConst:
+    MAX_GENERATIONS = 150
+    POPULATION_SIZE = 30
+    MUTATION_CHANCE = 0.2
+    MUTATION_RATE = 0.5
+    BATCH_SIZE = 50
+    SHOW_PROGRESS = False
+
+    def __repr__(self):
+        return f"MAX GENARATIONS: {self.MAX_GENERATIONS}\n" \
+               f"POPULATION SIZE: {self.POPULATION_SIZE}\n" \
+               f"MUTATION CHANCE: {self.MUTATION_CHANCE}\n" \
+               f"MUTATION RATE: {self.MUTATION_RATE}\n" \
+               f"BATCH_SIZE: {self.BATCH_SIZE}"
 
 
 @Singleton
-class GConst:
-    MAX_ITERATIONS = 200
+class GradientConst:
+    MAX_EPOCHS = 200
     BATCH_SIZE = 10
+    SHOW_PROGRESS = False
+
+    def __repr__(self):
+        return f"MAX EPOCHS: {self.MAX_EPOCHS}\n" \
+               f"BATCH_SIZE: {self.BATCH_SIZE}"

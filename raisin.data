@@ -1,21 +1,3 @@
-% Citation Request
-% CINAR I., KOKLU M. and TASDEMIR S., (2020) “Classification of Raisin Grains Using Machine Vision and Artificial Intelligence Methods”, Gazi Journal of Engineering Sciences, vol. 6, no. 3, pp. 200-209, December, 2020,DOI: https://doi.org/10.30855/gmbd.2020.03.03
-% Citation Request
-% https://www.muratkoklu.com/datasets/
-% https://dergipark.org.tr/tr/download/article-file/1227592
-% Citation Request
-
-@relation Raisin_Grains_Dataset
-@attribute Area Integer
-@attribute MajorAxisLength Real
-@attribute MinorAxisLength Real
-@attribute Eccentricity Real
-@attribute ConvexArea Integer
-@attribute Extent Real
-@attribute Perimeter Real
-@attribute Class {Kecimen,Besni}
-
-@data
 87524,442.2460114,253.291155,0.819738392,90546,0.758650579,1184.04,Kecimen
 75166,406.690687,243.0324363,0.801805234,78789,0.68412957,1121.786,Kecimen
 90856,442.2670483,266.3283177,0.798353619,93717,0.637612812,1208.575,Kecimen
