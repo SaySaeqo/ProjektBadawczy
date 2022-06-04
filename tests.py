@@ -18,11 +18,11 @@ from network import Network, WLTNetwork
 
 
 def get_algorithm(index):
-    '''
+    """
 
     :param index: indeks algorytmu
     :return: krotka (algorytm, nazwa algorytmu)
-    '''
+    """
     if index == 0:
         return 'gradient', gradient_algorithm
     elif index == 1:
@@ -36,12 +36,12 @@ def get_algorithm(index):
 
 
 def calc_error(result, solutions):
-    '''
+    """
 
     :param result:
     :param solutions: tabica krotek rozwiązań
     :return:
-    '''
+    """
     min_error = -1
     for i in range(len(solutions)):
         error = 0
@@ -105,7 +105,7 @@ def test_network_simple(correct_func):
     print(net)
     inputs = [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
     targets = [[1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
-    net.train(inputs, targets, test_network_simple=True)
+    history = net.train(inputs, targets, test_network_simple=True)
     # print(f"\r{i}/{N}", end="")
     print("-*-*-*-*-*-*-*-*-*-\nPO TRENINGU\n-*-*-*-*-*-*-*-*-*-")
     print(net)
@@ -120,11 +120,10 @@ def test_network_simple(correct_func):
     print("0 0 0 0")
 
     plt.figure()
-    history = ProgressHistory.instance()
-    plt.plot(history.all_costs[0:-4:4])
-    plt.plot(history.all_costs[1:-3:4])
-    plt.plot(history.all_costs[2:-2:4])
-    plt.plot(history.all_costs[3:-1:4])
+    plt.plot(history["all_costs"][0:-4:4])
+    plt.plot(history["all_costs"][1:-3:4])
+    plt.plot(history["all_costs"][2:-2:4])
+    plt.plot(history["all_costs"][3:-1:4])
     plt.title(str(correct_func))
     plt.legend(["000->1111", "010->1011", "011->1100", "111->0000"])
     plt.xlabel("iterations")
@@ -215,24 +214,14 @@ def test_neuron_libs(lib="neurolab"):
         # 0 0 0 0
 
 
-def get_iris_db():
-    def name2tuple(name):
-        if name == "Iris-setosa":
-            return (0, 0)
-        elif name == "Iris-versicolor":
-            return (0, 1)
-        elif name == "Iris-virginica":
-            return (1, 1)
-
-    # stworzenie bazy danych
-    with open("iris.data") as file:
+def get_db(filename, name2tuple):
+    with open(filename) as file:
         csvreader = csv.reader(file)
 
         table = []
         for row in csvreader:
             table.append(row)
 
-        table.pop()  # last one is empty array (eof I suppose)
         random.shuffle(table)
 
         inputs = []
@@ -373,8 +362,15 @@ def test_iris():
     """
     print("Testing Iris DB...")
 
-    net_data = get_iris_db()
-    random.shuffle(net_data)
+    def name2tuple(name):
+        if name == "Iris-setosa":
+            return (0, 0)
+        elif name == "Iris-versicolor":
+            return (0, 1)
+        elif name == "Iris-virginica":
+            return (1, 1)
+
+    net_data = get_db("iris.data", name2tuple)
     net_model = [4, 5, 5, 2]
     test_data_length = len(net_data) // 20 * 3  # 15%
 
@@ -399,51 +395,19 @@ def test_iris():
     print(table.draw())
 
 
-def get_raisin_db():
-    def name2tuple(name):
-        if name == "Kecimen":
-            return [0]
-        elif name == "Besni":
-            return [1]
-
-    # stworzenie bazy danych
-    with open("Raisin_Dataset.arff") as file:
-        csvreader = csv.reader(file)
-
-        table = []
-        for row in csvreader:
-            table.append(row)
-
-        table = table[18:]  # first lines are trash
-        table.pop()  # last one is empty array (eof I suppose)
-        random.shuffle(table)
-
-        inputs = []
-        targets = []
-        for row in table:
-            targets += [name2tuple(row[-1])]
-            inputs += [[float(elem) for elem in row[:-1]]]
-
-        # standardization / normalization
-        for feature_idx in range(len(inputs[0])):
-            min_val = min(input[feature_idx] for input in inputs)
-            for input in inputs:
-                input[feature_idx] -= min_val
-            max_val = max(input[feature_idx] for input in inputs)
-            for input in inputs:
-                input[feature_idx] /= max_val
-
-    return list(zip(inputs, targets))
-
-
 def test_raisin():
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
     print("Testing Raisin DB...")
 
-    net_data = get_raisin_db()
-    random.shuffle(net_data)
+    def name2tuple(name):
+        if name == "Kecimen":
+            return [0]
+        elif name == "Besni":
+            return [1]
+
+    net_data = get_db("raisin.data", name2tuple)
     net_model = [7, 5, 5, 1]
     test_data_length = len(net_data) // 20 * 3  # 15%
 
@@ -468,7 +432,12 @@ def test_raisin():
     print(table.draw())
 
 
-def get_beans_db():
+def test_beans():
+    """
+    That function just gather parameters I choose good in way of trail and fails process
+    """
+    print("Testing Beans DB...")
+
     def name2tuple(name):
         if name == "SEKER":
             return (0, 0, 0)
@@ -485,44 +454,7 @@ def get_beans_db():
         elif name == "SIRA":
             return (1, 1, 0)
 
-    # stworzenie bazy danych
-    with open("Dry_Bean_Dataset.arff") as file:
-        csvreader = csv.reader(file)
-
-        table = []
-        for input in csvreader:
-            table.append(input)
-
-        table = table[25:]  # first lines are trash
-        table.pop()  # last one is empty array (eof I suppose)
-        random.shuffle(table)
-
-        inputs = []
-        targets = []
-        for row in table:
-            targets += [name2tuple(row[-1])]
-            inputs += [[float(elem) for elem in row[:-1]]]
-
-        # standardization / normalization
-        for feature_idx in range(len(inputs[0])):
-            min_val = min(input[feature_idx] for input in inputs)
-            for input in inputs:
-                input[feature_idx] -= min_val
-            max_val = max(input[feature_idx] for input in inputs)
-            for input in inputs:
-                input[feature_idx] /= max_val
-
-    return list(zip(inputs, targets))
-
-
-def test_beans():
-    """
-    That function just gather parameters I choose good in way of trail and fails process
-    """
-    print("Testing Beans DB...")
-
-    net_data = get_beans_db()
-    random.shuffle(net_data)
+    net_data = get_db("dry_bean.data", name2tuple)
     net_model = [16, 10, 10, 3]
     test_data_length = len(net_data) // 20 * 3  # 15%
 
