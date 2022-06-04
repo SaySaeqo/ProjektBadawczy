@@ -517,7 +517,7 @@ def plot_network_overall_performance_comparison(nb_tests, net_data, net_model, t
 
     #############          GRADIENT          #############
     costs, success_rates, times = test_network_overall_performance(
-        nb_tests, net_data, net_model, [net_gradient, net_genetic], test_data_length)
+        nb_tests, net_data, net_model, net_gradient, test_data_length)
 
     # steps for gradient
     ax[0][0].plot(costs, color="blue", label="cost")
@@ -534,7 +534,7 @@ def plot_network_overall_performance_comparison(nb_tests, net_data, net_model, t
 
     #############          GENETIC          #############
     costs, success_rates, times = test_network_overall_performance(
-        nb_tests, net_data, net_model, [net_genetic, net_gradient], test_data_length)
+        nb_tests, net_data, net_model, net_genetic, test_data_length)
 
     # steps for gradient
     ax[1][0].plot(costs, color="blue", label="cost")
