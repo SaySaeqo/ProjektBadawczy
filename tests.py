@@ -356,7 +356,7 @@ def plot_network_mix(net_data, net_model, test_data_length=3):
     ax.legend(["cost", "success rate", "training trend line"])
 
 
-def test_iris():
+def test_iris(nb_tests=1):
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
@@ -387,15 +387,19 @@ def test_iris():
     grad_params.BATCH_SIZE = 10
 
     # plot results
-    plot_network_comparison(net_data, net_model, test_data_length)
-    plt.savefig("last_iris.png")
+    if nb_tests > 1:
+        plot_network_overall_performance_comparison(nb_tests, net_data, net_model, test_data_length)
+        plt.savefig("last_iris_performance.png")
+    else:
+        plot_network_comparison(net_data, net_model, test_data_length)
+        plt.savefig("last_iris.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])
     table.add_row([repr(grad_params), repr(gen_params)])
     print(table.draw())
 
 
-def test_raisin():
+def test_raisin(nb_tests=1):
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
@@ -424,15 +428,19 @@ def test_raisin():
     grad_params.BATCH_SIZE = 3
 
     # plot results
-    plot_network_comparison(net_data, net_model, test_data_length)
-    plt.savefig("last_raisin.png")
+    if nb_tests > 1:
+        plot_network_overall_performance_comparison(nb_tests, net_data, net_model, test_data_length)
+        plt.savefig("last_raisin_performance.png")
+    else:
+        plot_network_comparison(net_data, net_model, test_data_length)
+        plt.savefig("last_raisin.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])
     table.add_row([repr(grad_params), repr(gen_params)])
     print(table.draw())
 
 
-def test_beans():
+def test_beans(nb_tests=1):
     """
     That function just gather parameters I choose good in way of trail and fails process
     """
@@ -465,17 +473,78 @@ def test_beans():
     gen_params.MUTATION_CHANCE = 0.8
     gen_params.MUTATION_RATE = 0.2
     gen_params.BATCH_SIZE = 40
-    gen_params.SHOW_PROGRESS = True
+    gen_params.SHOW_PROGRESS = nb_tests <= 1
     # parameters for gradient
     grad_params = GradientConst.instance()
     grad_params.MAX_EPOCHS = 100
     grad_params.BATCH_SIZE = 10
-    grad_params.SHOW_PROGRESS = True
+    grad_params.SHOW_PROGRESS = nb_tests <= 1
 
     # plot results
-    plot_network_comparison(net_data, net_model, test_data_length)
-    plt.savefig("last_beans.png")
+    if nb_tests > 1:
+        plot_network_overall_performance_comparison(nb_tests, net_data, net_model, test_data_length)
+        plt.savefig("last_beans_performance.png")
+    else:
+        plot_network_comparison(net_data, net_model, test_data_length)
+        plt.savefig("last_beans.png")
     table = texttable.Texttable()
     table.add_row(["Gradient params:", "Genetic params:"])
     table.add_row([repr(grad_params), repr(gen_params)])
     print(table.draw())
+
+
+def test_network_overall_performance(nb_tests, database, net_model, train_func, test_data_length=3):
+    time_over_tests = []
+    sr_over_tests = []
+    cost_over_tests = []
+    for i in range(nb_tests):
+        random.shuffle(database)
+        history, time_passed = test_network(database, net_model, train_func, test_data_length)
+        time_over_tests += [time_passed]
+        sr_over_tests += [history["success_rate"][-1]]
+        cost_over_tests += [history["av_costs"][-1]]
+        progress_bar(i, nb_tests)
+    return cost_over_tests, sr_over_tests, time_over_tests
+
+
+def plot_network_overall_performance_comparison(nb_tests, net_data, net_model, test_data_length=3):
+    # start plotting
+    fig, ax = plt.subplots(2, 2)
+    plt.title("Neural network overall performance comparison")
+    fig.tight_layout(pad=1.8)
+    major_ticks = np.arange(1.15, step=0.1)
+    minor_ticks = np.arange(1.1, step=0.05)
+
+    #############          GRADIENT          #############
+    costs, success_rates, times = test_network_overall_performance(
+        nb_tests, net_data, net_model, [net_gradient, net_genetic], test_data_length)
+
+    # steps for gradient
+    ax[0][0].plot(costs, color="blue", label="cost")
+    ax[0][0].plot(success_rates, color="yellow", label="success_rate")
+    ax[0][0].set(title="Av. Learn Error- gradient", xlabel="attempt", ylabel="value", ylim=[0.0, 1.0])
+    # grid
+    ax[0][0].grid(linestyle='--', which="major", alpha=0.5)
+    ax[0][0].set_yticks(minor_ticks, minor=True)
+    ax[0][0].set_yticks(major_ticks)
+    ax[0][0].legend(["final cost", "final success rate"])
+    # times
+    ax[0][1].plot(times)
+    ax[0][1].set(title="Time needed to train- gradient", xlabel="attempt", ylabel="seconds")
+
+    #############          GENETIC          #############
+    costs, success_rates, times = test_network_overall_performance(
+        nb_tests, net_data, net_model, [net_genetic, net_gradient], test_data_length)
+
+    # steps for gradient
+    ax[1][0].plot(costs, color="blue", label="cost")
+    ax[1][0].plot(success_rates, color="yellow", label="success_rate")
+    ax[1][0].set(title="Av. Learn Error- genetic", xlabel="attempt", ylabel="value", ylim=[0.0, 1.0])
+    # grid
+    ax[1][0].grid(linestyle='--', which="major", alpha=0.5)
+    ax[1][0].set_yticks(minor_ticks, minor=True)
+    ax[1][0].set_yticks(major_ticks)
+    ax[1][0].legend(["final cost", "final success rate"])
+    # times
+    ax[1][1].plot(times)
+    ax[1][1].set(title="Time needed to train- genetic", xlabel="attempt", ylabel="seconds")

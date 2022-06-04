@@ -3,11 +3,11 @@ from tests import *
 # test_network_simple(net_gradient)
 # test_network_simple(net_genetic)
 
-test_iris()
+test_iris(10)
 plt.show()
-test_raisin()
+test_raisin(10)
 plt.show()
-test_beans()
+test_beans(10)
 plt.show()
 
 # db = get_iris_db()
